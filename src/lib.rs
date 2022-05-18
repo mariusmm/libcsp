@@ -1,8 +1,6 @@
 mod csp;
 pub use csp::{buffer, conn, port, qfifo, types, id};
 
-use serialport::SerialPort;
-
 pub fn csp_init() {
     println!("CSP library init...");
 

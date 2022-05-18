@@ -5,6 +5,7 @@ pub struct CspPacket {
     pub data: [u8; 256],
 }
 
+#[derive(Clone, Copy)]
 pub struct CspId {
     pub pri: u8,
     pub flags: u8,
@@ -12,4 +13,9 @@ pub struct CspId {
     pub dst: u16,
     pub dport: u8,
     pub sport: u8,
+}
+
+pub enum CspError {
+    CspNoError,
+    CspError
 }
