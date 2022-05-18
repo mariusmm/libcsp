@@ -1,27 +1,27 @@
 use crate::csp::interface::*;
-use crate::csp::interfaces::if_kiss::*;
 use crate::csp::types::*;
 
 pub fn csp_send_direct_iface<Intf>(
-    idout: &CspId,
+    _idout: &CspId,
     packet: &mut CspPacket,
     iface: &Intf,
-    via: u16,
+    _via: u16,
     from_me: u32,
 ) -> Result<(), CspError>
 where
     Intf: NextHop,
 {
-    iface.next_hop(via, packet, from_me)
+    iface.next_hop(_via, packet, from_me)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::csp::interfaces::if_kiss::*;
 
     #[test]
     fn csp_nexthop_test() {
-        let my_csp_id = CspId {
+       let my_csp_id = CspId {
             pri: 2,
             flags: 1,
             src: 5,
@@ -29,6 +29,8 @@ mod tests {
             dport: 23,
             sport: 99,
         };
+        
+        println!("Deb: {} {} {}", my_csp_id.dport, my_csp_id.flags, my_csp_id.dst);
 
         let mut pkt = CspPacket {
             frame_begin: [0; 4],
@@ -61,6 +63,7 @@ mod tests {
             rx_first: false,
         };
 
-        csp_send_direct_iface(&my_csp_id, &mut pkt, &test_int, 0, 1);
+        let _result = csp_send_direct_iface(&my_csp_id, &mut pkt, &test_int, 0, 1);
+        //assert_eq! (result, Ok(()))
     }
 }
