@@ -1,4 +1,5 @@
 use crate::csp::types::*;
+use std::io;
 
 /**
  * Common data for interfaces. Interfaces must implement its own struct with CspIface inside and the NextHop trait
@@ -22,5 +23,5 @@ pub struct CspIface {
 }
 
 pub trait NextHop {
-    fn next_hop (&self, via: u16, packet: & mut CspPacket, from_me: u32) -> Result<(), CspError>;
+    fn next_hop (&self, via: u16, packet: & mut CspPacket, from_me: u32) -> Result<(), io::Error>;
 }

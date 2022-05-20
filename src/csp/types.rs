@@ -1,8 +1,8 @@
 pub struct CspPacket {
     pub frame_begin: [u8; 4],
-    pub length: u16,
+    pub length: usize,
     pub id: CspId,
-    pub data: [u8; 256],
+    pub data :  [u8; 256], 
 }
 
 #[derive(Clone, Copy)]
@@ -29,6 +29,21 @@ impl CspPacket {
             data: [0; 256],
         }
     }
+
+    pub fn length(mut self, length: usize) -> Self {
+        self.length = length;
+        self
+    }
+
+    pub fn id(mut self, id: CspId) -> Self {
+        self.id = id;
+        self
+    }
+
+    pub fn data(mut self, data: [u8; 256]) -> Self {
+        self.data = data;
+        self
+    }
 }
 
 impl CspId {
@@ -41,5 +56,52 @@ impl CspId {
             dport: 0,
             sport: 0,
         }
+    }
+
+    pub fn pri (mut self, pri: u8) -> Self {
+        self.pri = pri;
+        self
+    }
+
+    pub fn flags(mut self, flags: u8) -> Self {
+        self.flags = flags;
+        self
+    }
+
+    pub fn src(mut self, src:  u16) -> Self {
+        self.src = src;
+        self
+    }
+
+    pub fn dst(mut self, dst: u16) -> Self {
+        self.dst = dst;
+        self
+    }
+
+    pub fn dport(mut self, dport: u8) -> Self {
+        self.dport = dport;
+        self
+    }
+
+    pub fn sport(mut self, sport: u8) -> Self {
+        self.sport = sport;
+        self
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cspid_test() {
+       let test = CspId::new().flags(5).pri(2).dport(23).sport(37).src(125).dst(90);
+       assert_eq!(test.pri, 2);
+       assert_eq!(test.flags, 5);
+       assert_eq!(test.src, 125);
+       assert_eq!(test.dst, 90);
+       assert_eq!(test.dport, 23);
+       assert_eq!(test.sport, 37);
     }
 }

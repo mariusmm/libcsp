@@ -9,3 +9,4 @@ edition = "2021"
 [dependencies]
 byteorder = "1.4.3"
 serialport = "4.1.0"
+bytes = "1.1.0"
