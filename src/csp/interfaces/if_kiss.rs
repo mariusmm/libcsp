@@ -4,6 +4,7 @@ use serialport::{DataBits, StopBits};
 
 use crate::csp::interface::*;
 use crate::csp::types::*;
+use crate::csp::utils::*;
 
 #[allow(dead_code)]
 pub enum CspKissMode {
@@ -42,11 +43,10 @@ pub fn csp_kiss_tx(
         .data_bits(DataBits::Eight);
     let mut port = builder.open().unwrap();
 
-    let kiss_buf = kiss_process(&packet.data, packet.length);
-
-    //let mem_buff = Bytes::from_static(packet.data);
-
+    let length = csp_crc32_append(& mut packet.data, packet.length);
+    let kiss_buf = kiss_process(&packet.data, length);
     let mem_buff = Bytes::from(kiss_buf);
+
     port.write(mem_buff.split_at(packet.length).0)?;
 
     Ok(())
