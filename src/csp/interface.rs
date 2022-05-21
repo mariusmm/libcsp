@@ -1,5 +1,8 @@
-use crate::csp::types::*;
 use std::io;
+use std::time::Duration;
+
+use crate::csp::interfaces::if_kiss::*;
+use crate::csp::types::*;
 
 /**
  * Common data for interfaces. Interfaces must implement its own struct with CspIface inside and the NextHop trait
@@ -23,5 +26,22 @@ pub struct CspIface {
 }
 
 pub trait NextHop {
-    fn next_hop (&self, via: u16, packet: & mut CspPacket, from_me: u32) -> Result<(), io::Error>;
+    fn next_hop(&mut self, via: u16, packet: &mut CspPacket, from_me: u32)
+        -> Result<(), io::Error>;
+}
+
+pub fn usart_open(
+    kissintf: &mut KissIntfData,
+    config: PortConfig,
+    ifname: String,
+) -> Result<(), io::Error> {
+    let builder = serialport::new(ifname, config.baud_rate)
+        .stop_bits(config.stopbits)
+        .data_bits(config.data_bits)
+        .timeout(Duration::from_millis(10));
+    let p = builder.open()?;
+
+    kissintf.port = Some(p);
+
+    Ok(())
 }
