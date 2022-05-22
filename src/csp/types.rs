@@ -95,6 +95,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn csppacket_test() {
+        let test = CspPacket::new();
+        assert_eq!(test.frame_begin, [0u8; 4]);
+        assert_eq!(test.length, 0);
+        assert_eq!(test.data, [0u8; 256]);
+    }
+
+    #[test]
     fn cspid_test() {
        let test = CspId::new().flags(5).pri(2).dport(23).sport(37).src(125).dst(90);
        assert_eq!(test.pri, 2);
