@@ -68,7 +68,7 @@ impl KissIntfData {
 pub fn csp_kiss_rx (interface: &mut KissIntfData,
     packet: &mut crate::csp::types::CspPacket) -> Result<(), io::Error> {
 
-        let mut serial_buf: Vec<u8> = vec![0; 32];
+        let mut serial_buf: Vec<u8> = vec![0; 255];
         match &interface.port {
 
             //TODO: better error management
@@ -79,7 +79,13 @@ pub fn csp_kiss_rx (interface: &mut KissIntfData,
                     let r = cl.read(serial_buf.as_mut_slice());
                     match r {
                         Ok(t) => {
-                            packet.data = serial_buf[..t].try_into().unwrap();
+                            println!("Size: {}", t);
+                            println!("Data {:#?}", &serial_buf[..t]);
+                            let a:&[u8] = serial_buf[..t].try_into().unwrap();
+                            //packet.data.clone_from_slice(a);
+                            for (dst, data) in packet.data.iter_mut().zip(a.iter()) {
+                                *dst = *data;
+                            }
                             packet.length = t;
                             return Ok(());
                         },
@@ -255,8 +261,9 @@ mod tests {
              stopbits : StopBits::One,
          };
         
-        usart_open(&mut test_int, uart_config, "/dev/pts/0".to_string()).unwrap();
+        usart_open(&mut test_int, uart_config, "/dev/pts/5".to_string()).unwrap();
         let result = csp_kiss_rx(&mut test_int, &mut pkt);
+        println!("UART RX: {:#?}", pkt.data);
         assert! (result.is_ok());
      }
 }
