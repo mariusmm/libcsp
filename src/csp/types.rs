@@ -2,7 +2,7 @@ pub struct CspPacket {
     pub frame_begin: [u8; 4],
     pub length: usize,
     pub id: CspId,
-    pub data :  [u8; 256], 
+    pub data: Vec<u8>,
 }
 
 #[derive(Clone, Copy)]
@@ -26,7 +26,7 @@ impl CspPacket {
         Self {frame_begin: [0; 4],
             length: 0,
             id: CspId::new(),
-            data: [0; 256],
+            data: Vec::new(),
         }
     }
 
@@ -40,7 +40,7 @@ impl CspPacket {
         self
     }
 
-    pub fn data(mut self, data: [u8; 256]) -> Self {
+    pub fn data(mut self, data: Vec<u8>) -> Self {
         self.data = data;
         self
     }

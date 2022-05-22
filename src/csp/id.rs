@@ -46,7 +46,7 @@ mod tests {
             frame_begin: [0;4],
             length : 23,
             id : my_csp_id,
-            data : [1;256],
+            data : vec![1;256],
         };
 
         id::csp_id1_prepend (& mut pkt);

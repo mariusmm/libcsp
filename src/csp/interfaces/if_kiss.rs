@@ -79,13 +79,7 @@ pub fn csp_kiss_rx (interface: &mut KissIntfData,
                     let r = cl.read(serial_buf.as_mut_slice());
                     match r {
                         Ok(t) => {
-                            println!("Size: {}", t);
-                            println!("Data {:#?}", &serial_buf[..t]);
-                            let a:&[u8] = serial_buf[..t].try_into().unwrap();
-                            //packet.data.clone_from_slice(a);
-                            for (dst, data) in packet.data.iter_mut().zip(a.iter()) {
-                                *dst = *data;
-                            }
+                            packet.data = serial_buf;
                             packet.length = t;
                             return Ok(());
                         },
@@ -170,7 +164,7 @@ mod tests {
              frame_begin: [0; 4],
              length: 25,
              id: my_csp_id,
-             data: [65; 256],
+             data: vec![65; 256],
          };
  
          
@@ -226,7 +220,7 @@ mod tests {
              frame_begin: [0; 4],
              length: 25,
              id: my_csp_id,
-             data: [65; 256],
+             data: vec![65; 256],
          };
  
          
