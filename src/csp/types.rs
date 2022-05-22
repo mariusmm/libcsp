@@ -15,10 +15,31 @@ pub struct CspId {
     pub sport: u8,
 }
 
+pub struct CspConnection {
+    pub opts: u32,
+}
+
 #[allow(dead_code)]
 pub enum CspError {
     CspNoError,
     CspError
+}
+
+pub enum CspServices {
+    CspCMP,
+    CspPing,
+    CspPs,
+    CspMemFree,
+    CspReboot,
+    CspBufFree,
+    CspUptime,
+}
+
+pub enum CspPriorities {
+    CspPrioCritical,
+    CspPrioHigh,
+    CspPrioNormal,
+    CspPrioLow,
 }
 
 impl CspPacket {

@@ -15,3 +15,21 @@ where
     return iface.next_hop(_via, packet, from_me);
 }
 
+pub fn csp_send (conn:&mut CspConnection, packet: &mut CspPacket) -> Result<(), io::Error> {
+
+    Ok(())
+}
+
+pub fn csp_read (conn: &mut CspConnection, timeout: u32 ) -> Result<CspPacket, io::Error> {
+    let ret = CspPacket::new();
+    Ok(ret)
+}
+
+pub fn csp_connect(prio: CspPriorities, dest: u16, dport: u8, timeout: u32, opts: u8) -> Result<CspConnection, io::Error> {
+
+    let a =  CspConnection {
+        opts : 0,
+    };
+
+    Ok(a)
+}
