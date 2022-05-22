@@ -99,7 +99,7 @@ mod tests {
         let test = CspPacket::new();
         assert_eq!(test.frame_begin, [0u8; 4]);
         assert_eq!(test.length, 0);
-        assert_eq!(test.data, [0u8; 256]);
+        assert_eq!(test.data, vec![0u8; 0]);
     }
 
     #[test]
