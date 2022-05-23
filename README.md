@@ -1,3 +1,5 @@
+[![Rust](https://github.com/mariusmm/libcsp/actions/workflows/rust.yml/badge.svg)](https://github.com/mariusmm/libcsp/actions/workflows/rust.yml)
+
 # Rust CSP porting
 
 Porting of [Cubesat Space Protocol](https://github.com/libcsp/libcsp) (CSP) to Rust.
