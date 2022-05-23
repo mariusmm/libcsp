@@ -38,7 +38,7 @@ pub fn usart_open(
     let builder = serialport::new(ifname, config.baud_rate)
         .stop_bits(config.stopbits)
         .data_bits(config.data_bits)
-        .timeout(Duration::from_millis(10000));
+        .timeout(Duration::from_millis(100));
     let p = builder.open()?;
 
     kissintf.port = Some(p);
