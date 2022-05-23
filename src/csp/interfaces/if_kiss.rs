@@ -212,6 +212,11 @@ mod tests {
 
     #[test]
     pub fn uart() {
+        if std::env::args().nth(1).unwrap() == "nouart" {
+            println!("No UART");
+            ()
+        }
+        
         let port_name = "/dev/pts/0".to_string();
         let builder = serialport::new(port_name, 115200)
             .stop_bits(StopBits::One)
@@ -224,6 +229,10 @@ mod tests {
 
     #[test]
     fn csp_nexthop_test() {
+        if std::env::args().nth(1).unwrap() == "nouart" {
+            println!("No UART");
+            ()
+        }
         let my_csp_id = CspId {
              pri: 2,
              flags: 1,
@@ -285,6 +294,10 @@ mod tests {
     /// ``` > echo "helloWorld" > /dev/pty/X
     #[test]
     fn csp_uart_rx_test() {
+        if std::env::args().nth(1).unwrap() == "nouart" {
+            println!("No UART");
+            ()
+        }
         let my_csp_id = CspId {
              pri: 2,
              flags: 1,
@@ -342,6 +355,7 @@ mod tests {
 
      #[test]
      fn csp_kiss_process_rx_test () {
+
         let my_csp_id = CspId {
             pri: 2,
             flags: 1,
