@@ -5,18 +5,18 @@ pub fn csp_ping( node: u16, timeout: u32, size: usize, conn_options: u8) -> Resu
 
     let mut conn = csp_connect(CspPriorities::CspPrioNormal, node, CspServices::CspPing as u8, timeout, conn_options).unwrap();
 
-    let mut packet = CspPacket::new();
+    let mut _packet = CspPacket::new();
 
-    packet.length = size;
+    _packet.length = size;
     let mut idx = 0;
-    for a in packet.data.iter_mut() {
+    for a in _packet.data.iter_mut() {
         *a = idx;
         idx += 1;
     }
 
-    csp_send(&mut conn, &mut packet);
+    csp_send(&mut conn, &mut _packet).unwrap();
 
-    packet = csp_read(&mut conn, timeout).unwrap();
+    _packet = csp_read(&mut conn, timeout).unwrap();
 
     // check echo
 

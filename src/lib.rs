@@ -1,6 +1,9 @@
 mod csp;
 pub use csp::*;
 
+//use std::sync::mpsc;
+//use std::sync::mpsc::{Sender, Receiver};
+
 pub fn csp_init() {
     println!("CSP library init...");
 
@@ -13,6 +16,9 @@ pub fn csp_init() {
     qfifo::csp_qfifo_init();
 
     //csp_rdp_queue_init();
+
+
+    //let (tx, rx) : (Sender<CspPacket>, Receiver<CspPacket>) = mpsc::channel();
 
     println!("CSP library init... Done");
 }

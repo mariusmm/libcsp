@@ -15,8 +15,15 @@ pub struct CspId {
     pub sport: u8,
 }
 
+#[derive(PartialEq)]
+pub enum ConnState {
+    ConnOpen,
+    ConnClosed,
+}
+
 pub struct CspConnection {
     pub opts: u32,
+    pub state: ConnState,
 }
 
 #[allow(dead_code)]

@@ -17,18 +17,29 @@ where
 
 pub fn csp_send (conn:&mut CspConnection, packet: &mut CspPacket) -> Result<(), io::Error> {
 
+    if conn.state != ConnState::ConnOpen{
+        Err(std::io::Error::new(std::io::ErrorKind::Other, "Connection Closed"))?
+    }
+    
+    csp_send_direct (conn, packet)
+}
+
+pub fn csp_send_direct (_conn:&mut CspConnection, _packet: &mut CspPacket) -> Result<(), io::Error> {
+    let _from_me = true;
+
     Ok(())
 }
 
-pub fn csp_read (conn: &mut CspConnection, timeout: u32 ) -> Result<CspPacket, io::Error> {
+pub fn csp_read (_conn: &mut CspConnection, _timeout: u32 ) -> Result<CspPacket, io::Error> {
     let ret = CspPacket::new();
     Ok(ret)
 }
 
-pub fn csp_connect(prio: CspPriorities, dest: u16, dport: u8, timeout: u32, opts: u8) -> Result<CspConnection, io::Error> {
+pub fn csp_connect(_prio: CspPriorities, _dest: u16, _dport: u8, _timeout: u32, _opts: u8) -> Result<CspConnection, io::Error> {
 
     let a =  CspConnection {
         opts : 0,
+        state : ConnState::ConnClosed,
     };
 
     Ok(a)
