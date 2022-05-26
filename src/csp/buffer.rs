@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 
 pub fn csp_buffer_init() {
     println!("CSP buffer init");

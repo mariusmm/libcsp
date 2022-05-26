@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::*;
 use byteorder::ByteOrder;
 use byteorder::NetworkEndian;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crc::{Crc, CRC_32_ISCSI};
 
 pub const CSPCRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISCSI);

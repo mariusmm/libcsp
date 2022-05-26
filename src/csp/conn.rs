@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::csp::types::*;
 use std::io;
 
@@ -18,7 +20,7 @@ pub fn csp_connect(_prio: CspPriorities, _dest: u16, _dport: u8, _timeout: u32, 
             dport: 23,
             sport: 99,
         },
-        
+
     };
 
     Ok(a)
