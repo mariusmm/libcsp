@@ -1,11 +1,12 @@
 use std::io;
+use std::time::Duration;
 
 use bytes::Bytes;
 use serialport::{DataBits, StopBits, SerialPort};
 
 use crate::csp::interface::*;
 use crate::csp::types::*;
-use crate::csp::utils::*;
+
 
 const FEND:u8 = 0xC0;
 const FESC:u8 = 0xDB;
@@ -13,7 +14,7 @@ const TFEND:u8 = 0xDC;
 const TFESC:u8 = 0xDD;
 const TNC_DATA:u8 = 0x00;
 
-enum CspKissMode {
+pub enum CspKissMode {
     KissModeNotStarted, // No start detected
     KissModeStarted,    // Started on a KISS frame
     KissModeEscaped,    // Rx escape character
@@ -21,12 +22,12 @@ enum CspKissMode {
 }
 
 pub struct KissIntfData {
-    intf: CspIface,
+    pub intf: CspIface,
     pub max_rx_length: usize,
     pub rx_length: u32,
     pub rx_first: bool,
     pub port: Option<Box<dyn SerialPort>>,
-    rx_mode: CspKissMode,
+    pub rx_mode: CspKissMode,
 }
 
 pub struct PortConfig {
@@ -48,14 +49,15 @@ impl KissIntfData {
     }
 
     pub fn csp_kiss_tx(
-        self: &mut KissIntfData,
+        self: &KissIntfData,
         _via: u16,
         packet: &mut crate::csp::types::CspPacket,
-        _from_me: u32,
+        _from_me: bool,
     ) -> Result<(), io::Error> {
         println!("Kiss TX {} {}", self.intf.name, packet.length);
     
-        let length = csp_crc32_append(& mut packet.data, packet.length);
+        //let length = csp_crc32_append(& mut packet.data, packet.length);
+        let length = packet.length;
         let kiss_buf = kiss_process_tx(&packet.data, length);
         let mem_buff = Bytes::from(kiss_buf);
      
@@ -69,6 +71,28 @@ impl KissIntfData {
         };
         Ok(())
     }
+}
+
+impl crate::csp::interface::NextHop for KissIntfData {
+    fn next_hop(& self, _via: u16, packet: &mut CspPacket, _from_me: bool) -> Result<(), io::Error> {
+        self.csp_kiss_tx(_via, packet, _from_me)
+    }
+}
+
+pub fn usart_open(
+    kissintf: &mut KissIntfData,
+    config: PortConfig,
+    ifname: String,
+) -> Result<(), io::Error> {
+    let builder = serialport::new(ifname, config.baud_rate)
+        .stop_bits(config.stopbits)
+        .data_bits(config.data_bits)
+        .timeout(Duration::from_millis(10000));
+    let p = builder.open()?;
+
+    kissintf.port = Some(p);
+    
+    Ok(())
 }
 
 pub fn csp_kiss_rx (interface: &mut KissIntfData,
@@ -86,25 +110,17 @@ pub fn csp_kiss_rx (interface: &mut KissIntfData,
                     match r {
                         Ok(t) => {
                             kiss_process_rx (serial_buf, t, packet, interface).unwrap();
-                            //packet.data = serial_buf;
-                            //packet.length = t;
                             return Ok(());
                         },
                         Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
                         Err(e) => panic!("Error: {:?}", e)
                     }
-                
-                
             }
         };
         Ok(())
 }
 
-impl crate::csp::interface::NextHop for KissIntfData {
-    fn next_hop(& mut self, _via: u16, packet: &mut CspPacket, _from_me: u32) -> Result<(), io::Error> {
-        self.csp_kiss_tx(_via, packet, _from_me)
-    }
-}
+
 
 fn kiss_process_tx(data: &[u8], len: usize) -> Vec<u8> {
 
@@ -208,13 +224,14 @@ fn kiss_process_rx(data: Vec<u8>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::csp::io::*;
 
     #[test]
     pub fn uart() {
-        if std::env::args().nth(1).unwrap() == "nouart" {
-            println!("No UART");
-            ()
+        if std::env::args().len() > 1 {
+            if  std::env::args().nth(1).unwrap() == "nouart" {
+                println!("No UART");
+                ()
+            }
         }
         
         let port_name = "/dev/pts/0".to_string();
@@ -229,9 +246,11 @@ mod tests {
 
     #[test]
     fn csp_nexthop_test() {
-        if std::env::args().nth(1).unwrap() == "nouart" {
-            println!("No UART");
-            ()
+        if std::env::args().len() > 1 {
+            if  std::env::args().nth(1).unwrap() == "nouart" {
+                println!("No UART");
+                ()
+            }
         }
         let my_csp_id = CspId {
              pri: 2,
@@ -282,7 +301,7 @@ mod tests {
          };
         
         usart_open(&mut test_int, uart_config, "/dev/pts/0".to_string()).unwrap();
-        let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut test_int, 0, 1);
+        let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut test_int, 0, false);
         assert! (result.is_ok());
      }
 
@@ -294,10 +313,13 @@ mod tests {
     /// ``` > echo "helloWorld" > /dev/pty/X
     #[test]
     fn csp_uart_rx_test() {
-        if std::env::args().nth(1).unwrap() == "nouart" {
-            println!("No UART");
-            ()
+        if std::env::args().len() > 1 {
+            if  std::env::args().nth(1).unwrap() == "nouart" {
+                println!("No UART");
+                ()
+            }
         }
+
         let my_csp_id = CspId {
              pri: 2,
              flags: 1,

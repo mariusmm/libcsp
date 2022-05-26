@@ -5,7 +5,7 @@ pub mod qfifo;
 pub mod types;
 pub mod id;
 pub mod interface;
-pub mod io;
+pub mod csp;
 pub mod utils;
 pub mod interfaces;
 pub mod services;

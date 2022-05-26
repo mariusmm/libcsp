@@ -1,3 +1,19 @@
+use crate::csp::interface::*;
+use std::io;
+
+pub fn csp_send_direct_iface<Intf>(
+    _idout: &CspId,
+    packet: &mut CspPacket,
+    iface: &mut Intf,
+    via: u16,
+    from_me: bool,
+) -> Result<(), io::Error>
+where
+    Intf: NextHop,
+{
+    return iface.next_hop(via, packet, from_me);
+}
+
 pub struct CspPacket {
     pub frame_begin: [u8; 4],
     pub length: usize,
@@ -24,12 +40,13 @@ pub enum ConnState {
 pub struct CspConnection {
     pub opts: u32,
     pub state: ConnState,
+    pub idout: CspId,
 }
 
 #[allow(dead_code)]
 pub enum CspError {
     CspNoError,
-    CspError
+    CspError,
 }
 
 pub enum CspServices {
@@ -50,8 +67,9 @@ pub enum CspPriorities {
 }
 
 impl CspPacket {
-    pub fn new () -> Self {
-        Self {frame_begin: [0; 4],
+    pub fn new() -> Self {
+        Self {
+            frame_begin: [0; 4],
             length: 0,
             id: CspId::new(),
             data: Vec::new(),
@@ -75,7 +93,7 @@ impl CspPacket {
 }
 
 impl CspId {
-    pub fn new () -> Self {
+    pub fn new() -> Self {
         Self {
             pri: 0,
             flags: 0,
@@ -86,7 +104,7 @@ impl CspId {
         }
     }
 
-    pub fn pri (mut self, pri: u8) -> Self {
+    pub fn pri(mut self, pri: u8) -> Self {
         self.pri = pri;
         self
     }
@@ -96,7 +114,7 @@ impl CspId {
         self
     }
 
-    pub fn src(mut self, src:  u16) -> Self {
+    pub fn src(mut self, src: u16) -> Self {
         self.src = src;
         self
     }
@@ -117,6 +135,15 @@ impl CspId {
     }
 }
 
+impl CspConnection {
+    pub fn new() -> Self {
+        Self {
+            idout: CspId::new(),
+            opts: 0,
+            state: ConnState::ConnClosed,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -132,12 +159,18 @@ mod tests {
 
     #[test]
     fn cspid_test() {
-       let test = CspId::new().flags(5).pri(2).dport(23).sport(37).src(125).dst(90);
-       assert_eq!(test.pri, 2);
-       assert_eq!(test.flags, 5);
-       assert_eq!(test.src, 125);
-       assert_eq!(test.dst, 90);
-       assert_eq!(test.dport, 23);
-       assert_eq!(test.sport, 37);
+        let test = CspId::new()
+            .flags(5)
+            .pri(2)
+            .dport(23)
+            .sport(37)
+            .src(125)
+            .dst(90);
+        assert_eq!(test.pri, 2);
+        assert_eq!(test.flags, 5);
+        assert_eq!(test.src, 125);
+        assert_eq!(test.dst, 90);
+        assert_eq!(test.dport, 23);
+        assert_eq!(test.sport, 37);
     }
 }
