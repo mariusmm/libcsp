@@ -9,6 +9,13 @@ pub struct CSP {
 }
 
 impl CSP {
+
+    pub fn new () -> Self {
+        CSP {
+            intf_list : Vec::new(),
+        }
+    }
+
     pub fn add_interface(&mut self, intf: Box<dyn crate::csp::interface::NextHop>) {
         self.intf_list.push(intf);
     }
@@ -102,16 +109,16 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        usart_open(&mut test_int, uart_config, "/dev/pts/5".to_string()).unwrap();
+        let port = usart_open(uart_config, "/dev/pts/1".to_string());
+        test_int.port = port.ok();
+
         let mut test_conn = CspConnection::new();
         test_conn.state = ConnState::ConnOpen;
         let mut test_pkt = CspPacket::new()
             .data(vec![0, 'a' as u8, 1, 2, 3, 4, 5, 6, 7, 8, 9])
             .length(10);
-        let mut csp = CSP {
-            intf_list: Vec::new(),
-        };
 
+        let mut csp = CSP::new();
         csp.add_interface(Box::new(test_int));
         let res = csp.csp_send(&mut test_conn, &mut test_pkt);
         //let res = csp_send ( &mut test_conn, &mut test_pkt);

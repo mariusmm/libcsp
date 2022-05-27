@@ -82,19 +82,18 @@ impl crate::csp::interface::NextHop for KissIntfData {
 }
 
 pub fn usart_open(
-    kissintf: &mut KissIntfData,
     config: PortConfig,
     ifname: String,
-) -> Result<(), io::Error> {
+) -> Result<Box<dyn SerialPort>, io::Error> {
     let builder = serialport::new(ifname, config.baud_rate)
         .stop_bits(config.stopbits)
         .data_bits(config.data_bits)
         .timeout(Duration::from_millis(10000));
     let p = builder.open()?;
 
-    kissintf.port = Some(p);
+    //Some(p)
     
-    Ok(())
+    Ok(p)
 }
 
 pub fn csp_kiss_rx (interface: &mut KissIntfData,
@@ -302,7 +301,9 @@ mod tests {
              stopbits : StopBits::One,
          };
         
-        usart_open(&mut test_int, uart_config, "/dev/pts/0".to_string()).unwrap();
+        let port = usart_open(uart_config, "/dev/pts/0".to_string());
+        test_int.port = port.ok();
+
         let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut test_int, 0, false);
         assert! (result.is_ok());
      }
@@ -370,7 +371,9 @@ mod tests {
              stopbits : StopBits::One,
          };
         
-        usart_open(&mut test_int, uart_config, "/dev/pts/5".to_string()).unwrap();
+        let port = usart_open(uart_config, "/dev/pts/5".to_string());
+        test_int.port = port.ok();
+
         let result = csp_kiss_rx(&mut test_int, &mut pkt);
         println!("UART RX: {:#?}", pkt.data);
         println!("Packet len: {}", pkt.length);
