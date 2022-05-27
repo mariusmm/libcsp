@@ -9,7 +9,6 @@ use serialport::{DataBits, StopBits, SerialPort};
 use crate::csp::interface::*;
 use crate::csp::types::*;
 
-
 const FEND:u8 = 0xC0;
 const FESC:u8 = 0xDB;
 const TFEND:u8 = 0xDC;
@@ -58,7 +57,7 @@ impl KissIntfData {
     ) -> Result<(), io::Error> {
         println!("Kiss TX {} {}", self.intf.name, packet.length);
     
-        //let length = csp_crc32_append(& mut packet.data, packet.length);
+        packet.csp_crc32_append();
         let length = packet.length;
         let kiss_buf = kiss_process_tx(&packet.data, length);
         let mem_buff = Bytes::from(kiss_buf);

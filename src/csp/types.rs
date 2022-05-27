@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+use crc::{Crc, CRC_32_ISCSI};
 use std::io;
 
 use crate::csp::interface::*;
 
+pub const CSPCRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISCSI);
 
 pub fn csp_send_direct_iface<Intf>(
     _idout: &CspId,
@@ -93,6 +95,15 @@ impl CspPacket {
     pub fn data(mut self, data: Vec<u8>) -> Self {
         self.data = data;
         self
+    }
+
+    pub fn csp_crc32_append(&mut self) {
+        let calc_crc = CSPCRC32.checksum(&mut self.data);
+
+        self.data.push(((calc_crc & 0xFF000000) >> 24) as u8);
+        self.data.push(((calc_crc & 0x00FF0000) >> 16) as u8);
+        self.data.push(((calc_crc & 0x0000FF00) >> 8) as u8);
+        self.data.push((calc_crc & 0x000000FF) as u8);
     }
 }
 
