@@ -46,7 +46,6 @@ mod tests {
 
         let mut pkt = types::CspPacket {
             frame_begin: [0;4],
-            length : 23,
             id : my_csp_id,
             data : vec![1;256],
         };

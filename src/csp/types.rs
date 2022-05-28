@@ -22,7 +22,6 @@ where
 
 pub struct CspPacket {
     pub frame_begin: [u8; 4],
-    pub length: usize,
     pub id: CspId,
     pub data: Vec<u8>,
 }
@@ -31,8 +30,8 @@ pub struct CspPacket {
 pub struct CspId {
     pub pri: u8,
     pub flags: u8,
-    pub src: u16,
-    pub dst: u16,
+    pub src: u8,
+    pub dst: u8,
     pub dport: u8,
     pub sport: u8,
 }
@@ -56,13 +55,13 @@ pub enum CspError {
 }
 
 pub enum CspServices {
-    CspCMP,
-    CspPing,
-    CspPs,
-    CspMemFree,
-    CspReboot,
-    CspBufFree,
-    CspUptime,
+    CspCMP = 0,
+    CspPing = 1,
+    CspPs = 2,
+    CspMemFree = 3,
+    CspReboot = 4,
+    CspBufFree = 5,
+    CspUptime = 6,
 }
 
 pub enum CspPriorities {
@@ -76,15 +75,9 @@ impl CspPacket {
     pub fn new() -> Self {
         Self {
             frame_begin: [0; 4],
-            length: 0,
             id: CspId::new(),
             data: Vec::new(),
         }
-    }
-
-    pub fn length(mut self, length: usize) -> Self {
-        self.length = length;
-        self
     }
 
     pub fn id(mut self, id: CspId) -> Self {
@@ -129,12 +122,12 @@ impl CspId {
         self
     }
 
-    pub fn src(mut self, src: u16) -> Self {
+    pub fn src(mut self, src: u8) -> Self {
         self.src = src;
         self
     }
 
-    pub fn dst(mut self, dst: u16) -> Self {
+    pub fn dst(mut self, dst: u8) -> Self {
         self.dst = dst;
         self
     }
@@ -168,7 +161,6 @@ mod tests {
     fn csppacket_test() {
         let test = CspPacket::new();
         assert_eq!(test.frame_begin, [0u8; 4]);
-        assert_eq!(test.length, 0);
         assert_eq!(test.data, vec![0u8; 0]);
     }
 

@@ -9,7 +9,6 @@ impl CSP {
         self,
         node: u16,
         timeout: u32,
-        size: usize,
         conn_options: u8,
     ) -> Result<(), CspError> {
         let mut conn = csp_connect(
@@ -23,7 +22,6 @@ impl CSP {
 
         let mut packet = CspPacket::new();
 
-        packet.length = size;
         let mut idx = 0;
         for a in packet.data.iter_mut() {
             *a = idx;

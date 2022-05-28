@@ -73,13 +73,13 @@ mod tests {
             }
         }
 
-        let _my_csp_id = CspId {
+        let test_csp_id = CspId {
             pri: 2,
-            flags: 1,
-            src: 5,
-            dst: 12,
-            dport: 23,
-            sport: 99,
+            flags: 0,
+            src: 1,
+            dst: 8,
+            dport: 1,
+            sport: 36,
         };
 
         let mut test_int = KissIntfData {
@@ -120,8 +120,8 @@ mod tests {
         test_conn.state = ConnState::ConnOpen;
 
         let mut test_pkt = CspPacket::new()
-            .data(vec![0, 'a' as u8, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-            .length(10);
+            .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            .id(test_csp_id);
 
         let mut csp = CSP::new();
         csp.add_interface(Box::new(test_int));

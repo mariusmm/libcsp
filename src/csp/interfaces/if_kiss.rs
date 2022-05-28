@@ -55,11 +55,26 @@ impl KissIntfData {
         packet: &mut crate::csp::types::CspPacket,
         _from_me: bool,
     ) -> Result<(), io::Error> {
-        println!("Kiss TX {} {}", self.intf.name, packet.length);
-    
+        println!("Kiss TX {} {}", self.intf.name, packet.data.len());
+
         packet.csp_crc32_append();
-        let length = packet.length;
-        let kiss_buf = kiss_process_tx(&packet.data, length);
+
+        let flags = packet.id.flags as u8;
+        let cspid_low = (packet.id.sport & 0x3F) | (packet.id.dport & 0x3) << 6;
+        let cspid_med = ((packet.id.dport & 0x3C) >> 2) | (packet.id.dst & 0x1F) << 4;
+        let cspid_high = (packet.id.pri << 6) | (packet.id.src & 0x3F) << 1 | (packet.id.dst & 0x10) >> 4;
+
+        packet.data.insert(1, cspid_high);
+        packet.data.insert(2, cspid_med);
+        packet.data.insert(3, cspid_low);
+        packet.data.insert(4, flags);
+        packet.data.insert(5, 0x00); //don't now why this extra byte, maybe padding?
+
+        let kiss_buf = kiss_process_tx(&packet.data, packet.data.len());
+
+        //println!("{:x?}", kiss_buf);
+
+        let kiss_len = kiss_buf.len();
         let mem_buff = Bytes::from(kiss_buf);
      
         match &self.port {
@@ -67,7 +82,7 @@ impl KissIntfData {
             None => panic!("Port not initialized for KISS interface"), 
             Some (p) => {
                 let mut cl = p.try_clone()?;
-                cl.write(mem_buff.split_at(packet.length).0)?;
+                cl.write(mem_buff.split_at(kiss_len).0)?;
             }
         };
         Ok(())
@@ -89,8 +104,6 @@ pub fn usart_open(
         .data_bits(config.data_bits)
         .timeout(Duration::from_millis(10000));
     let p = builder.open()?;
-
-    //Some(p)
     
     Ok(p)
 }
@@ -164,7 +177,7 @@ fn kiss_process_rx(data: Vec<u8>
                     break;
                 }
                 //csp_id_setup_rx();
-                if packet.length > intf.max_rx_length {
+                if packet.data.len() > intf.max_rx_length {
                     intf.rx_mode = CspKissMode::KissModeSkipFrame;
                 }
                 intf.rx_first = true;
@@ -178,7 +191,7 @@ fn kiss_process_rx(data: Vec<u8>
                 }
 
                 if inputbyte == FEND {
-                    packet.length = len;
+                    //packet.data.len() == len;
                     // if csp_id_strip <0 error
                     
                     // intf.frame += 1;
@@ -263,9 +276,8 @@ mod tests {
           
          let mut pkt = CspPacket {
              frame_begin: [0; 4],
-             length: 25,
              id: my_csp_id,
-             data: vec![65; 256],
+             data: vec![65; 25],
          };
  
          
@@ -300,7 +312,7 @@ mod tests {
              stopbits : StopBits::One,
          };
         
-        let port = usart_open(uart_config, "/dev/pts/0".to_string());
+        let port = usart_open(uart_config, "/dev/pts/1".to_string());
         test_int.port = port.ok();
 
         let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut test_int, 0, false);
@@ -333,9 +345,8 @@ mod tests {
           
          let mut pkt = CspPacket {
              frame_begin: [0; 4],
-             length: 25,
              id: my_csp_id,
-             data: vec![65; 1],
+             data: vec![65; 10],
          };
  
          
@@ -370,12 +381,12 @@ mod tests {
              stopbits : StopBits::One,
          };
         
-        let port = usart_open(uart_config, "/dev/pts/5".to_string());
+        let port = usart_open(uart_config, "/dev/pts/1".to_string());
         test_int.port = port.ok();
 
         let result = csp_kiss_rx(&mut test_int, &mut pkt);
         println!("UART RX: {:#?}", pkt.data);
-        println!("Packet len: {}", pkt.length);
+        println!("Packet len: {}", pkt.data.len());
         assert! (result.is_ok());
      }
 
@@ -393,7 +404,6 @@ mod tests {
          
         let mut pkt = CspPacket {
             frame_begin: [0; 4],
-            length: 25,
             id: my_csp_id,
             data: Vec::new(),
         };
@@ -428,7 +438,7 @@ mod tests {
         //let data = vec![0xC0, 0x00, 0x54, 0xDB, 0xDC, 0xDB, 0xDD, 0x53, 0x54, 0xC0];
         let data = vec![0xC0, 0x00, 0xDB, 0xDC, 0xDB, 0xDD];
         kiss_process_rx (data, 6, &mut pkt, &mut test_int).unwrap();
-        println!("len: {} Data: {:#02x?}", pkt.length, pkt.data);
+        println!("len: {} Data: {:#02x?}", pkt.data.len(), pkt.data);
         assert_eq!(pkt.data, vec![0xC0,0xDB]);
      }
 }
