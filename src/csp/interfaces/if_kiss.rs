@@ -239,6 +239,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     pub fn uart() {
         if std::env::args().len() > 1 {
             if  std::env::args().nth(1).unwrap() == "nouart" {
@@ -258,6 +259,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn csp_nexthop_test() {
         if std::env::args().len() > 1 {
             if  std::env::args().nth(1).unwrap() == "nouart" {
@@ -326,6 +328,7 @@ mod tests {
     /// One port is used here, use the other in other console with the following command
     /// ``` > echo "helloWorld" > /dev/pty/X
     #[test]
+    #[ignore]
     fn csp_uart_rx_test() {
         if std::env::args().len() > 1 {
             if  std::env::args().nth(1).unwrap() == "nouart" {
