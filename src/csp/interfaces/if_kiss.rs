@@ -46,17 +46,21 @@ impl KissIntfData {
         let builder = serialport::new(ifname, config.baud_rate)
             .stop_bits(config.stopbits)
             .data_bits(config.data_bits)
-            .timeout(Duration::from_millis(10000));
+            .timeout(Duration::from_millis(1000));
         let p = builder.open().unwrap();
 
-        Self {
+        let mut ret = KissIntfData {
             intf: intf,
             max_rx_length: 256,
             rx_mode: CspKissMode::KissModeNotStarted,
             rx_length: 0,
             rx_first: false,
             port:Some(p),
-        }
+        };
+
+        ret.usart_rx_func();
+
+        ret
     }
 
     pub fn csp_kiss_tx(
@@ -103,6 +107,7 @@ impl KissIntfData {
     fn usart_rx_func(self: &mut KissIntfData) {
         loop {
             self.csp_kiss_rx().unwrap();
+            println!("Loop");
         }
     }
 
@@ -128,22 +133,11 @@ impl KissIntfData {
                             };
 
                             if self.intf.rx_channel.is_some() {
-                                let res = self.intf.rx_channel.clone().unwrap().send(fifo_pkt);
+                                let _res = self.intf.rx_channel.clone().unwrap().send(fifo_pkt);
                             } else {
                                 println!("Error no RX FIFO!");
                             }
                         }
-
-                        // Això gasta el rx_channel i el deixa a None !
-                        //if let Some(s) = interface.rx_channel.take() {
-                        //    s.send(fifo_pkt).unwrap();
-                        //}
-                        // això no el deu gastar (?)
-                        //let mut a= interface.rx_channel.clone();
-                        //if let Some(s) = a.take() {
-                        //    s.send(fifo_pkt).unwrap();
-                        //}
-
                         return Ok(());
                     }
                     Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
@@ -275,7 +269,8 @@ mod tests {
         let port_name = "/dev/pts/0".to_string();
         let builder = serialport::new(port_name, 115200)
             .stop_bits(StopBits::One)
-            .data_bits(DataBits::Eight);
+            .data_bits(DataBits::Eight)
+            .timeout(Duration::from_millis(100));
         let mut port = builder.open().unwrap();
 
         let string = "hello world\n".to_string();
