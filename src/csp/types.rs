@@ -55,9 +55,11 @@ pub struct CspFIFO {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub enum CspError {
     CspNoError,
     CspError,
+    CspNoPacket,
 }
 
 pub enum CspServices {

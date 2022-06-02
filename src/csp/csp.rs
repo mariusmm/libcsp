@@ -61,11 +61,17 @@ impl CSP {
 
     pub fn csp_read(
         self,
-        _conn: &mut CspConnection,
-        _timeout: u32,
-    ) -> Result<CspPacket, io::Error> {
-        let ret = CspPacket::new();
-        Ok(ret)
+//        _conn: &mut CspConnection,
+    ) -> Result<CspPacket, CspError> {
+
+        let pkt = self.channel_rx.recv();
+        match pkt {
+            Ok(p) => {
+                Ok(p.packet)
+            }
+            Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
+        }
+        
     }
 }
 
