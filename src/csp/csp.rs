@@ -1,17 +1,26 @@
 // SPDX-License-Identifier: MIT
 
 use std::io;
+use std::sync::mpsc::sync_channel;
+
 
 use crate::csp::types::*;
 
 pub struct CSP {
     intf_list: Vec<Box<dyn crate::csp::interface::NextHop>>,
+    channel_rx: std::sync::mpsc::Receiver<CspFIFO>,
+    channel_tx: std::sync::mpsc::SyncSender<CspFIFO>,
 }
 
 impl CSP {
     pub fn new() -> Self {
+        // TODO: Any better style to keep tuple at init time?
+        // TODO: This 16 should be configurable
+        let (a, b) = sync_channel(16);
         CSP {
             intf_list: Vec::new(),
+            channel_tx: a,
+            channel_rx: b,
         }
     }
 
@@ -19,6 +28,9 @@ impl CSP {
         self.intf_list.push(intf);
     }
 
+    pub fn get_rx_channel(&self) -> std::sync::mpsc::SyncSender<CspFIFO> {
+        self.channel_tx.clone()
+    }
     pub fn csp_send(
         self,
         conn: &mut CspConnection,
@@ -65,6 +77,7 @@ mod tests {
     use serialport::{DataBits, StopBits};
 
     #[test]
+    #[ignore]
     fn send_test() {
         if std::env::args().len() > 1 {
             if std::env::args().nth(1).unwrap() == "nouart" {
@@ -82,30 +95,7 @@ mod tests {
             sport: 36,
         };
 
-        let mut test_int = KissIntfData {
-            intf: CspIface {
-                addr: 12,
-                netmask: 5,
-                name: "KISS".to_string(),
-                mtu: 7,
-                split_horizon_off: 1,
-                tx: 0,
-                rx: 0,
-                tx_error: 0,
-                rx_error: 0,
-                drop: 0,
-                autherr: 0,
-                frame: 0,
-                txbytes: 0,
-                rxbytes: 0,
-                irq: 0,
-            },
-            max_rx_length: 256,
-            rx_mode: CspKissMode::KissModeNotStarted,
-            rx_length: 0,
-            rx_first: false,
-            port: None,
-        };
+        let mut intf = CspIface::new(12, 5, "KISS".to_string());
 
         let uart_config = PortConfig {
             baud_rate: 115200,
@@ -113,18 +103,18 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        let port = usart_open(uart_config, "/dev/pts/1".to_string());
-        test_int.port = port.ok();
-
         let mut test_conn = CspConnection::new();
         test_conn.state = ConnState::ConnOpen;
 
-        let mut test_pkt = CspPacket::new()
-            .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-            .id(test_csp_id);
-
         let mut csp = CSP::new();
-        csp.add_interface(Box::new(test_int));
+        intf.rx_channel = Some(csp.get_rx_channel());
+
+        let kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/4".to_string());
+        csp.add_interface(Box::new(kiss_intf));
+
+        let mut test_pkt = CspPacket::new()
+        .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        .id(test_csp_id);
 
         let res = csp.csp_send(&mut test_conn, &mut test_pkt);
         assert!(res.is_ok());

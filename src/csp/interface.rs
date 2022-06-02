@@ -7,6 +7,7 @@ use crate::csp::types::*;
 /**
  * Common data for interfaces. Interfaces must implement its own struct with CspIface inside and the NextHop trait
  */
+#[derive(Clone)]
 pub struct CspIface {
     pub addr: u16,
     pub netmask: u16,
@@ -23,8 +24,32 @@ pub struct CspIface {
     pub txbytes: u32,
     pub rxbytes: u32,
     pub irq: u32,
+    pub rx_channel: Option<std::sync::mpsc::SyncSender<CspFIFO>>
 }
 
 pub trait NextHop {
     fn next_hop(&self, via: u16, packet: &mut CspPacket, from_me: bool) -> Result<(), io::Error>;
+}
+
+impl CspIface {
+    pub fn new(addr: u16, netmask: u16, name : String) -> CspIface {
+        Self {
+            addr: addr,
+            netmask: netmask,
+            name: name,
+            mtu: 255,
+            split_horizon_off: 0,
+            tx: 0,
+            rx: 0,
+            tx_error: 0,
+            rx_error: 0,
+            drop: 0,
+            autherr: 0,
+            frame: 0,
+            txbytes: 0,
+            rxbytes: 0,
+            irq: 0,
+            rx_channel: None,
+        }
+    }
 }

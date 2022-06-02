@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
+use std::io;
 
 use crc::{Crc, CRC_32_ISCSI};
-use std::io;
 
 use crate::csp::interface::*;
 
@@ -20,6 +20,7 @@ where
     return iface.next_hop(via, packet, from_me);
 }
 
+#[derive(Clone)]
 pub struct CspPacket {
     pub frame_begin: [u8; 4],
     pub id: CspId,
@@ -46,6 +47,11 @@ pub struct CspConnection {
     pub opts: u32,
     pub state: ConnState,
     pub idout: CspId,
+}
+
+pub struct CspFIFO {
+    pub iface: CspIface,
+    pub packet: CspPacket,
 }
 
 #[allow(dead_code)]
