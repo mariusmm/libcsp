@@ -1,4 +1,6 @@
 [![Rust](https://github.com/mariusmm/libcsp/actions/workflows/rust.yml/badge.svg)](https://github.com/mariusmm/libcsp/actions/workflows/rust.yml)
+![GitHub](https://img.shields.io/github/license/mariusmm/libcsp)
+![Twitter Follow](https://img.shields.io/twitter/follow/mariusmonton?style=social)
 
 # Rust CSP porting
 
