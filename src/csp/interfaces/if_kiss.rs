@@ -233,23 +233,24 @@ fn kiss_process_rx(
 
                     packet.id = get_packet_id(aux_a, aux_b, aux_c, aux_d);
 
-                    println!("Aux: {:x} {:x} {:x} {:x} ", aux_a, aux_b, aux_c, aux_d);
-                    println!("{:?}", packet.id);
+                    debug!("Aux: {:x} {:x} {:x} {:x} ", aux_a, aux_b, aux_c, aux_d);
+                    debug!("{:?}", packet.id);
 
-                    // validate crc, better option to manage bytes?
-                    // TODO: Better byte/u32 management/comparison
+                    // validate crc
                     let len = packet.data.len();
-                    let calc = &packet.data[0..len-4].to_vec();
-                    let calc_crc = csp_crc32_calc(&calc);
-                    let bytes: [u8; 4] = unsafe { transmute(calc_crc.to_be()) };
 
-                    if bytes[0] != packet.data[len-4] || bytes[1] != packet.data[len-3] 
-                        || bytes[2] != packet.data[len-2] || bytes[3] != packet.data[len-1] {
-                            println!("Error CRC");
-                            return Err(std::io::Error::new(std::io::ErrorKind::Other, "CRC Error"));
-                        }
-                    else {
-                        println!("CRC OK!");
+                    let calc_crc_buf = &packet.data[0..len-4].to_vec();
+                    let calc_crc = csp_crc32_calc(&calc_crc_buf);
+
+                    let pkt_crc_buf = &packet.data[len-4 ..];
+                    let pkt_crc = byteorder::BigEndian::read_u32(pkt_crc_buf);
+
+                    if pkt_crc != calc_crc {
+                        warn!("Error CRC");
+                        return Err(std::io::Error::new(std::io::ErrorKind::Other, "CRC Error"));
+                    } else {
+                        debug!("CRC OK!");
+                        info!("Accepted packet {:?}", packet.id);
                         return Ok(packet);
                     }
                 }
