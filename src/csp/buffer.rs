@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 pub fn csp_buffer_init() {
-    println!("CSP buffer init");
+    info!("CSP buffer init");
 
     // 1 need to create a pool of messages
     // 2 create a queue for these buffers 

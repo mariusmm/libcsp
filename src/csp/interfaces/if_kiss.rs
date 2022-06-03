@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-use std::intrinsics::transmute;
 use std::io;
 use std::time::Duration;
 
 use bytes::Bytes;
 use serialport::{DataBits, SerialPort, StopBits};
+use byteorder::{ByteOrder};
 
 use crate::csp::interface::*;
 use crate::csp::types::*;
@@ -46,7 +46,7 @@ impl KissIntfData {
     pub fn new(intf: CspIface, config: PortConfig,
         ifname: String,
     ) -> Self {
-        let builder = serialport::new(ifname, config.baud_rate)
+        let builder = serialport::new(&ifname, config.baud_rate)
             .stop_bits(config.stopbits)
             .data_bits(config.data_bits)
             .timeout(Duration::from_millis(10000));
@@ -57,6 +57,8 @@ impl KissIntfData {
             intf: intf.clone(),
             port:Some(p),
         };
+
+        info!("Creating KISS ({}) interface", ifname);
 
         std::thread::spawn(move || usart_rx_func( q, &intf.clone()) );
 
@@ -70,7 +72,7 @@ impl KissIntfData {
         packet: &mut crate::csp::types::CspPacket,
         _from_me: bool,
     ) -> Result<(), io::Error> {
-        println!("Kiss TX {} {}", self.intf.name, packet.data.len());
+        debug!("Kiss TX {} {}", self.intf.name, packet.data.len());
 
         packet.csp_crc32_append();
 
@@ -92,7 +94,7 @@ impl KissIntfData {
 
         match &self.port {
             //TODO: better error management
-            None => panic!("Port not initialized for KISS interface"),
+            None => {error!("Port not initialized for KISS interface"); panic!("Port not initialized for KISS interface");},
             Some(p) => {
                 let mut cl = p.try_clone()?;
                 cl.write(mem_buff.split_at(kiss_len).0)?;
@@ -172,13 +174,12 @@ impl KissIntfDataRx {
                     if intf.rx_channel.is_some() {
                         let _res = intf.rx_channel.clone().unwrap().send(fifo_pkt);
                     } else {
-                        println!("Error no RX FIFO!");
+                        error!("No RX fifo");
                     }
                 }
 
                 return Ok(());
             }
-            //Err(e) if e.kind() == io::ErrorKind::TimedOut => return Err(e),
             Err(e) => return Err(e),
         };
     }
@@ -200,7 +201,7 @@ fn kiss_process_rx(
                 if inputbyte != FEND {
                     break;
                 }
-                //csp_id_setup_rx();
+                
                 if packet.data.len() > intf.max_rx_length {
                     intf.rx_mode = CspKissMode::KissModeSkipFrame;
                 }
@@ -219,11 +220,12 @@ fn kiss_process_rx(
 
                     let len = packet.data.len();
 
-                    if len < 4 {
+                    if len < 5 {
+                        warn!("Invalid pkt length");
                         return Err(std::io::Error::new(std::io::ErrorKind::Other, "Invalid length"));
                     }
 
-                    println!("Data: {:x?}", packet.data);
+                    debug!("Data: {:x?}", packet.data);
                     let aux_a = packet.data.remove(0);
                     let aux_b = packet.data.remove(0);
                     let aux_c = packet.data.remove(0);
@@ -341,7 +343,6 @@ mod tests {
         };
 
         let mut pkt = CspPacket {
-            frame_begin: [0; 4],
             id: my_csp_id,
             data: vec![65; 25],
         };
@@ -369,6 +370,9 @@ mod tests {
     #[test]
     #[ignore]
     fn csp_uart_rx_test() {
+        
+        pretty_env_logger::init();
+
         if std::env::args().len() > 1 {
             if std::env::args().nth(1).unwrap() == "nouart" {
                 println!("No UART");
@@ -396,7 +400,7 @@ mod tests {
 
         let pkt = csp.csp_read(Duration::from_millis(10000)).unwrap();
         let data = pkt.data;
-        println!("{:02X?}", data);
+        println!("RX packet: {:02X?}", data);
     }
 
     #[test]

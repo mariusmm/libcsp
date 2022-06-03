@@ -38,6 +38,7 @@ impl CSP {
         packet: &mut CspPacket,
     ) -> Result<(), io::Error> {
         if conn.state != ConnState::ConnOpen {
+            warn!("Connection closed");
             Err(std::io::Error::new(
                 std::io::ErrorKind::Other,
                 "Connection Closed",
@@ -71,7 +72,6 @@ impl CSP {
             }
             Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
         }
-        
     }
 }
 

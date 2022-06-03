@@ -2,12 +2,15 @@
 
 pub mod csp;
 pub use csp::*;
+extern crate pretty_env_logger;
+#[macro_use] extern crate log;
 
 //use std::sync::mpsc;
 //use std::sync::mpsc::{Sender, Receiver};
 
 pub fn csp_init() {
-    println!("CSP library init...");
+    //pretty_env_logger::init();
+    info!("CSP library init...");
 
     buffer::csp_buffer_init();
 
@@ -21,8 +24,7 @@ pub fn csp_init() {
 
 
     //let (tx, rx) : (Sender<CspPacket>, Receiver<CspPacket>) = mpsc::channel();
-
-    println!("CSP library init... Done");
+    info!("CSP library init... Done");
 }
 
 

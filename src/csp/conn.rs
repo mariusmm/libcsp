@@ -4,7 +4,7 @@ use crate::csp::types::*;
 use std::io;
 
 pub fn csp_conn_init() {
-    println!("CSP conn init");
+    info!("CSP conn init");
 }
 
 pub fn csp_connect(_prio: CspPriorities, _dest: u16, _dport: u8, _timeout: u32, _opts: u8) -> Result<CspConnection, io::Error> {
@@ -20,7 +20,6 @@ pub fn csp_connect(_prio: CspPriorities, _dest: u16, _dport: u8, _timeout: u32, 
             dport: 23,
             sport: 99,
         },
-
     };
 
     Ok(a)
