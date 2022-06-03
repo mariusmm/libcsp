@@ -22,7 +22,6 @@ where
 
 #[derive(Clone)]
 pub struct CspPacket {
-    pub frame_begin: [u8; 4],
     pub id: CspId,
     pub data: Vec<u8>,
 }
@@ -82,7 +81,6 @@ pub enum CspPriorities {
 impl CspPacket {
     pub fn new() -> Self {
         Self {
-            frame_begin: [0; 4],
             id: CspId::new(),
             data: Vec::new(),
         }
@@ -172,7 +170,6 @@ mod tests {
     #[test]
     fn csppacket_test() {
         let test = CspPacket::new();
-        assert_eq!(test.frame_begin, [0u8; 4]);
         assert_eq!(test.data, vec![0u8; 0]);
     }
 
