@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
-use std::io;
 
+use std::io;
 use crc::{Crc, CRC_32_ISCSI};
 
 use crate::csp::interface::*;
@@ -27,7 +27,7 @@ pub struct CspPacket {
     pub data: Vec<u8>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct CspId {
     pub pri: u8,
     pub flags: u8,
@@ -106,6 +106,10 @@ impl CspPacket {
         self.data.push(((calc_crc & 0x0000FF00) >> 8) as u8);
         self.data.push((calc_crc & 0x000000FF) as u8);
     }
+}
+
+pub fn csp_crc32_calc(data: &Vec<u8>) -> u32 {
+    CSPCRC32.checksum(&data)
 }
 
 impl CspId {

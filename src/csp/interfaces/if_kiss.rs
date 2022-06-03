@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use std::intrinsics::transmute;
 use std::io;
 use std::time::Duration;
 
@@ -26,7 +27,6 @@ pub enum CspKissMode {
 pub struct KissIntfData {
     pub intf: CspIface,
     pub port: Option<Box<dyn SerialPort>>,
-    
 }
 
 struct KissIntfDataRx {
@@ -49,7 +49,7 @@ impl KissIntfData {
         let builder = serialport::new(ifname, config.baud_rate)
             .stop_bits(config.stopbits)
             .data_bits(config.data_bits)
-            .timeout(Duration::from_millis(1000));
+            .timeout(Duration::from_millis(10000));
         let p = builder.open().unwrap();
         let q = p.try_clone().unwrap();
 
@@ -98,10 +98,8 @@ impl KissIntfData {
                 cl.write(mem_buff.split_at(kiss_len).0)?;
             }
         };
-
         Ok(())
     }
-
 }
 
 impl crate::csp::interface::NextHop for KissIntfData {
@@ -217,15 +215,41 @@ fn kiss_process_rx(
                 }
 
                 if inputbyte == FEND {
-                    //packet.data.len() == len;
-                    // if csp_id_strip <0 error
-
-                    // intf.frame += 1;
-                    // validate crc
-                    // send to CSP task server using qfifo (?)
-
                     intf.rx_mode = CspKissMode::KissModeNotStarted;
-                    continue;
+
+                    let len = packet.data.len();
+
+                    if len < 4 {
+                        return Err(std::io::Error::new(std::io::ErrorKind::Other, "Invalid length"));
+                    }
+
+                    println!("Data: {:x?}", packet.data);
+                    let aux_a = packet.data.remove(0);
+                    let aux_b = packet.data.remove(0);
+                    let aux_c = packet.data.remove(0);
+                    let aux_d = packet.data.remove(0);
+
+                    packet.id = get_packet_id(aux_a, aux_b, aux_c, aux_d);
+
+                    println!("Aux: {:x} {:x} {:x} {:x} ", aux_a, aux_b, aux_c, aux_d);
+                    println!("{:?}", packet.id);
+
+                    // validate crc, better option to manage bytes?
+                    // TODO: Better byte/u32 management/comparison
+                    let len = packet.data.len();
+                    let calc = &packet.data[0..len-4].to_vec();
+                    let calc_crc = csp_crc32_calc(&calc);
+                    let bytes: [u8; 4] = unsafe { transmute(calc_crc.to_be()) };
+
+                    if bytes[0] != packet.data[len-4] || bytes[1] != packet.data[len-3] 
+                        || bytes[2] != packet.data[len-2] || bytes[3] != packet.data[len-1] {
+                            println!("Error CRC");
+                            return Err(std::io::Error::new(std::io::ErrorKind::Other, "CRC Error"));
+                        }
+                    else {
+                        println!("CRC OK!");
+                        return Ok(packet);
+                    }
                 }
 
                 if intf.rx_first {
@@ -256,6 +280,22 @@ fn kiss_process_rx(
     Ok(packet)
 }
 
+// CSP 1.0
+// | Byte0 | Byte 1 | Byte 2 | Byte 3 |
+// | 2 PRIO | 5 SOURCE | 5 DESTINATION | 6 DESTINATION PORT | 6 SOURCE PORT | 8 FLAGS |
+fn get_packet_id (byte0: u8, byte1: u8, byte2: u8, byte3: u8) -> CspId {
+    let mut ret_val = CspId::new();
+
+    ret_val.sport = byte2 & 0x3F;
+    ret_val.dport = byte1 & 0x0F | (byte2 & 0xC0) >> 6;
+    ret_val.dst = (byte1 >> 4) | ( byte0 & 0x01 ) << 4;
+    ret_val.src = (byte0 >> 1) & 0x1F;
+    ret_val.pri = (byte0 >> 6) & 0x03;
+    ret_val.flags = byte3;
+
+    ret_val
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -275,7 +315,7 @@ mod tests {
         let builder = serialport::new(port_name, 115200)
             .stop_bits(StopBits::One)
             .data_bits(DataBits::Eight)
-            .timeout(Duration::from_millis(100));
+            .timeout(Duration::from_millis(1000));
         let mut port = builder.open().unwrap();
 
         let string = "hello world\n".to_string();
@@ -342,7 +382,7 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        let mut intf =  CspIface::new(12, 5, "KISS".to_string());
+        let mut intf =  CspIface::new(5, 5, "KISS".to_string());
 
         let mut csp = CSP::new();
         intf.rx_channel = Some(csp.get_rx_channel());
@@ -354,7 +394,7 @@ mod tests {
 
         csp.add_interface(Box::new(kiss_intf));
 
-        let pkt = csp.csp_read().unwrap();
+        let pkt = csp.csp_read(Duration::from_millis(10000)).unwrap();
         let data = pkt.data;
         println!("{:02X?}", data);
     }
@@ -368,5 +408,20 @@ mod tests {
         let pkt = kiss_process_rx(data, 6, &mut kiss_intf_rx).unwrap();
         println!("len: {} Data: {:#02x?}", pkt.data.len(), pkt.data);
         assert_eq!(pkt.data, vec![0xC0, 0xDB]);
+    }
+
+    #[test]
+    fn csp_get_packet_id() {
+        let a = get_packet_id(0x82, 0x20, 0x5b, 0x00);
+        println!("{:?}", a);
+        let cmp = CspId {
+            pri: 2,
+            src: 1,
+            dst: 2,
+            sport: 27,
+            dport: 1,
+            flags: 0,
+        };
+        assert_eq!(a, cmp);
     }
 }

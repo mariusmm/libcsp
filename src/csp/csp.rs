@@ -2,6 +2,7 @@
 
 use std::io;
 use std::sync::mpsc::sync_channel;
+use std::time::Duration;
 
 
 use crate::csp::types::*;
@@ -61,10 +62,9 @@ impl CSP {
 
     pub fn csp_read(
         self,
-//        _conn: &mut CspConnection,
+        timeout: Duration,
     ) -> Result<CspPacket, CspError> {
-
-        let pkt = self.channel_rx.recv();
+        let pkt = self.channel_rx.recv_timeout (timeout);
         match pkt {
             Ok(p) => {
                 Ok(p.packet)
