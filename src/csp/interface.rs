@@ -7,7 +7,7 @@ use crate::csp::types::*;
 /**
  * Common data for interfaces. Interfaces must implement its own struct with CspIface inside and the NextHop trait
  */
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct CspIface {
     pub addr: u16,
     pub netmask: u16,

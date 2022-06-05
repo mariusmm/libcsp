@@ -20,7 +20,7 @@ where
     return iface.next_hop(via, packet, from_me);
 }
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct CspPacket {
     pub id: CspId,
     pub data: Vec<u8>,
@@ -48,6 +48,7 @@ pub struct CspConnection {
     pub idout: CspId,
 }
 
+#[derive(Debug)]
 pub struct CspFIFO {
     pub iface: CspIface,
     pub packet: CspPacket,

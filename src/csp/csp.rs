@@ -4,25 +4,35 @@ use std::io;
 use std::sync::mpsc::sync_channel;
 use std::time::Duration;
 
-
 use crate::csp::types::*;
 
+///
+/// ## CSP
+///
+/// Outside -> intf's -> CSP Routing -> modules (csp_read) : get_rx_channel
+///
+/// Modules (csp_send) -> CSP Routing -> Intf's -> Outside)
+///
 pub struct CSP {
     intf_list: Vec<Box<dyn crate::csp::interface::NextHop>>,
-    channel_rx: std::sync::mpsc::Receiver<CspFIFO>,
-    channel_tx: std::sync::mpsc::SyncSender<CspFIFO>,
+    inb_channel_out: Option<std::sync::mpsc::SyncSender<CspFIFO>>,
+    outb_channel_in: std::sync::mpsc::Receiver<CspFIFO>,
+    outb_channel_out: std::sync::mpsc::SyncSender<CspFIFO>,
 }
 
 impl CSP {
     pub fn new() -> Self {
         // TODO: Any better style to keep tuple at init time?
-        // TODO: This 16 should be configurable
         let (a, b) = sync_channel(16);
-        CSP {
+        let mut ret = CSP {
             intf_list: Vec::new(),
-            channel_tx: a,
-            channel_rx: b,
-        }
+            inb_channel_out: None,
+            outb_channel_in: b,
+            outb_channel_out: a,
+        };
+        ret.start_routing();
+
+        ret
     }
 
     pub fn add_interface(&mut self, intf: Box<dyn crate::csp::interface::NextHop>) {
@@ -30,8 +40,9 @@ impl CSP {
     }
 
     pub fn get_rx_channel(&self) -> std::sync::mpsc::SyncSender<CspFIFO> {
-        self.channel_tx.clone()
+        self.outb_channel_out.clone()
     }
+
     pub fn csp_send(
         self,
         conn: &mut CspConnection,
@@ -61,17 +72,25 @@ impl CSP {
         iface.next_hop(via, packet, from_me)
     }
 
-    pub fn csp_read(
-        self,
-        timeout: Duration,
-    ) -> Result<CspPacket, CspError> {
-        let pkt = self.channel_rx.recv_timeout (timeout);
+    pub fn csp_read(self, timeout: Duration) -> Result<CspPacket, CspError> {
+        let pkt = self.outb_channel_in.recv_timeout(timeout);
         match pkt {
-            Ok(p) => {
-                Ok(p.packet)
-            }
+            Ok(p) => Ok(p.packet),
             Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
         }
+    }
+
+    fn start_routing(&mut self) {
+        info!("Start routing");
+        // TODO: This 16 should be configurable
+        let (a, b) = sync_channel(16);
+
+        self.inb_channel_out = Some(a);
+
+        std::thread::spawn(move|| {
+            let data = b.recv().unwrap();
+            println!("ROUTE RX: {:?}", data);
+        });
     }
 }
 
@@ -119,8 +138,8 @@ mod tests {
         csp.add_interface(Box::new(kiss_intf));
 
         let mut test_pkt = CspPacket::new()
-        .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        .id(test_csp_id);
+            .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            .id(test_csp_id);
 
         let res = csp.csp_send(&mut test_conn, &mut test_pkt);
         assert!(res.is_ok());

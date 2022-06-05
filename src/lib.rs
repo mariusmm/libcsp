@@ -5,8 +5,6 @@ pub use csp::*;
 extern crate pretty_env_logger;
 #[macro_use] extern crate log;
 
-//use std::sync::mpsc;
-//use std::sync::mpsc::{Sender, Receiver};
 
 pub fn csp_init() {
     //pretty_env_logger::init();
@@ -14,7 +12,7 @@ pub fn csp_init() {
 
     buffer::csp_buffer_init();
 
-    conn::csp_conn_init();
+    //conn::csp_conn_init();
 
     port::csp_port_init();
 
