@@ -394,7 +394,7 @@ mod tests {
 
         let kiss_intf = KissIntfData::new( intf,
             uart_config,
-            "/dev/pts/4".to_string(),
+            "/dev/pts/8".to_string(),
         );
 
         csp.add_interface(Box::new(kiss_intf));
