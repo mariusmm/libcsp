@@ -73,13 +73,13 @@ impl CSP {
         let from_me = true;
         let via = 2u16;
 
-        //let iface = &self.intf_list[0];
-
-        let iface = self.intf_list.lock().and_then(|mut item| {
-            Ok(item[0])
+        self.intf_list.lock().and_then(|item| {
+            item[0].next_hop(via, packet, from_me);
+            Ok(())
         } ).unwrap();
 
-        iface.next_hop(via, packet, from_me)
+        //iface.next_hop(via, packet, from_me)
+        Ok(())
     }
 
     pub fn csp_read(&self, timeout: Duration) -> Result<CspPacket, CspError> {
@@ -97,20 +97,18 @@ impl CSP {
         let (a, b) = sync_channel(16);
         self.inb_channel_out = Some(a);
 
+        let ch = self.outb_channel_out.clone(); 
         std::thread::spawn( move|| {
             let data = b.recv().unwrap();
             println!("ROUTE RX: {:?}", data);
             
             //let ch = self.outb_channel_out.clone();
-            //ch.send(data);
+            ch.send(data);
 
-            let ifaces = self.intf_list.lock().and_then(|mut item| {
-                Ok(item)
-            } ).unwrap();
-            for a in *ifaces {
-                
-            }
-
+            //let ifaces = self.intf_list.lock().and_then(|mut item| {
+            //    Ok(item)
+            //} ).unwrap();
+            
         });
     }
 }
