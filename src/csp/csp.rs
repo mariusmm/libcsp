@@ -44,10 +44,10 @@ impl CSP {
         self.outb_channel_out.clone()
     }
 
-    pub fn csp_send(
+    pub fn send(
         &self,
-        conn: &mut CspConnection,
-        packet: &mut CspPacket,
+        conn: &mut Connection,
+        packet: &mut Packet,
     ) -> Result<(), io::Error> {
         if conn.state != ConnState::ConnOpen {
             warn!("Connection closed");
@@ -57,13 +57,13 @@ impl CSP {
             ))?
         }
 
-        self.csp_send_direct(conn, packet)
+        self.send_direct(conn, packet)
     }
 
-    pub fn csp_send_direct(
+    pub fn send_direct(
         &self,
-        _conn: &mut CspConnection,
-        packet: &mut CspPacket,
+        _conn: &mut Connection,
+        packet: &mut Packet,
     ) -> Result<(), io::Error> {
         let from_me = true;
         let via = 2u16;
@@ -80,14 +80,14 @@ impl CSP {
     }
 
     /* TODO: Implement! */
-    pub fn csp_read(&self, _timeout: Duration) -> Result<CspPacket, CspError> {
+    pub fn read(&self, _timeout: Duration) -> Result<Packet, Error> {
        /* let pkt = self.outb_channel_in.recv_timeout(timeout);
         match pkt {
             Ok(p) => Ok(p.packet),
             Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
         }
         */
-        Ok(CspPacket::new())
+        Ok(Packet::new())
     }
 
     fn routing_process(&self)
@@ -112,6 +112,11 @@ impl CSP {
             //} ).unwrap();
         });
     }
+
+    pub fn connect() {
+
+    }
+
 }
 
 #[cfg(test)]
@@ -131,7 +136,7 @@ mod tests {
             }
         }
 
-        let test_csp_id = CspId {
+        let test_csp_id = Id {
             pri: 2,
             flags: 0,
             src: 1,
@@ -140,7 +145,7 @@ mod tests {
             sport: 36,
         };
 
-        let mut intf = CspIface::new(12, 5, "KISS".to_string());
+        let mut intf = Iface::new(12, 5, "KISS".to_string());
 
         let uart_config = PortConfig {
             baud_rate: 115200,
@@ -148,7 +153,7 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        let mut test_conn = CspConnection::new();
+        let mut test_conn = Connection::new();
         test_conn.state = ConnState::ConnOpen;
 
         let mut csp = CSP::new();
@@ -157,11 +162,11 @@ mod tests {
         let kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/4".to_string());
         csp.add_interface(Box::new(kiss_intf));
 
-        let mut test_pkt = CspPacket::new()
+        let mut test_pkt = Packet::new()
             .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
             .id(test_csp_id);
 
-        let res = csp.csp_send(&mut test_conn, &mut test_pkt);
+        let res = csp.send(&mut test_conn, &mut test_pkt);
         assert!(res.is_ok());
     }
 }

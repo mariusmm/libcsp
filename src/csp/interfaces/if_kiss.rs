@@ -25,7 +25,7 @@ pub enum CspKissMode {
 }
 
 pub struct KissIntfData {
-    pub intf: CspIface,
+    pub intf: Iface,
     pub port: Option<Box<dyn SerialPort>>,
 }
 
@@ -43,8 +43,8 @@ pub struct PortConfig {
 }
 
 impl KissIntfData {
-    pub fn new(intf: CspIface, config: PortConfig,
-        ifname: String,
+    pub fn new(intf: Iface, config: PortConfig,
+               ifname: String,
     ) -> Self {
         let builder = serialport::new(&ifname, config.baud_rate)
             .stop_bits(config.stopbits)
@@ -66,15 +66,15 @@ impl KissIntfData {
 
     }
 
-    pub fn csp_kiss_tx(
+    pub fn kiss_tx(
         self: &KissIntfData,
         _via: u16,
-        packet: &mut crate::csp::types::CspPacket,
+        packet: &mut crate::csp::types::Packet,
         _from_me: bool,
     ) -> Result<(), io::Error> {
         debug!("Kiss TX {} {}", self.intf.name, packet.data.len());
 
-        packet.csp_crc32_append();
+        packet.crc32_append();
 
         let flags = packet.id.flags as u8;
         let cspid_low = (packet.id.sport & 0x3F) | (packet.id.dport & 0x3) << 6;
@@ -105,16 +105,16 @@ impl KissIntfData {
 }
 
 impl crate::csp::interface::NextHop for KissIntfData {
-    fn next_hop(&self, _via: u16, packet: &mut CspPacket, _from_me: bool) -> Result<(), io::Error> {
-        self.csp_kiss_tx(_via, packet, _from_me)
+    fn next_hop(&self, _via: u16, packet: &mut Packet, _from_me: bool) -> Result<(), io::Error> {
+        self.kiss_tx(_via, packet, _from_me)
     }
 }
 
-pub fn usart_rx_func(port: Box<dyn SerialPort>, intf: &CspIface, ) {
+pub fn usart_rx_func(port: Box<dyn SerialPort>, intf: &Iface, ) {
     let mut rx_intf = KissIntfDataRx::new();
     let cl = port.try_clone().unwrap();
     loop {
-        let _res = rx_intf.csp_kiss_rx( &cl, intf.clone());
+        let _res = rx_intf.kiss_rx(&cl, intf.clone());
         println!("RX Loop");
     }   
 }
@@ -156,7 +156,7 @@ impl KissIntfDataRx {
         }
     }
 
-    fn csp_kiss_rx(self: &mut KissIntfDataRx, port: &Box<dyn SerialPort>, intf: CspIface) -> Result<(), io::Error> {
+    fn kiss_rx(self: &mut KissIntfDataRx, port: &Box<dyn SerialPort>, intf: Iface) -> Result<(), io::Error> {
 
         let mut serial_buf: Vec<u8> = vec![0; self.max_rx_length];
         let mut cl = port.try_clone()?;
@@ -189,9 +189,9 @@ fn kiss_process_rx(
     data: Vec<u8>,
     len: usize,
     intf : &mut KissIntfDataRx,
-) -> Result<crate::csp::types::CspPacket, io::Error> {
+) -> Result<crate::csp::types::Packet, io::Error> {
     let mut n = 0;
-    let mut packet = crate::csp::types::CspPacket::new();
+    let mut packet = crate::csp::types::Packet::new();
 
     while n < len {
         let inputbyte = data[n];
@@ -286,8 +286,8 @@ fn kiss_process_rx(
 // CSP 1.0
 // | Byte0 | Byte 1 | Byte 2 | Byte 3 |
 // | 2 PRIO | 5 SOURCE | 5 DESTINATION | 6 DESTINATION PORT | 6 SOURCE PORT | 8 FLAGS |
-fn get_packet_id (byte0: u8, byte1: u8, byte2: u8, byte3: u8) -> CspId {
-    let mut ret_val = CspId::new();
+fn get_packet_id (byte0: u8, byte1: u8, byte2: u8, byte3: u8) -> Id {
+    let mut ret_val = Id::new();
 
     ret_val.sport = byte2 & 0x3F;
     ret_val.dport = byte1 & 0x0F | (byte2 & 0xC0) >> 6;
@@ -334,7 +334,7 @@ mod tests {
                 ()
             }
         }
-        let my_csp_id = CspId {
+        let my_csp_id = Id {
             pri: 2,
             flags: 1,
             src: 5,
@@ -343,12 +343,12 @@ mod tests {
             sport: 99,
         };
 
-        let mut pkt = CspPacket {
+        let mut pkt = Packet {
             id: my_csp_id,
             data: vec![65; 25],
         };
 
-        let mut intf = CspIface::new(12, 5, "KISS".to_string());
+        let mut intf = Iface::new(12, 5, "KISS".to_string());
         let uart_config = PortConfig {
             baud_rate: 115200,
             data_bits: DataBits::Eight,
@@ -388,7 +388,7 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        let mut intf =  CspIface::new(5, 5, "KISS".to_string());
+        let mut intf =  Iface::new(5, 5, "KISS".to_string());
 
         let mut csp = CSP::new();
         intf.rx_channel = Some(csp.get_rx_channel());
@@ -401,7 +401,7 @@ mod tests {
         csp.add_interface(Box::new(kiss_intf));
 
         std::thread::sleep(std::time::Duration::new(5, 0));
-        let pkt = csp.csp_read(Duration::from_millis(10000)).unwrap();
+        let pkt = csp.read(Duration::from_millis(10000)).unwrap();
         let data = pkt.data;
         println!("RX packet: {:02X?}", data);
     }
@@ -421,7 +421,7 @@ mod tests {
     fn csp_get_packet_id() {
         let a = get_packet_id(0x82, 0x20, 0x5b, 0x00);
         println!("{:?}", a);
-        let cmp = CspId {
+        let cmp = Id {
             pri: 2,
             src: 1,
             dst: 2,

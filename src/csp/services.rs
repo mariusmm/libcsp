@@ -5,22 +5,22 @@ use crate::csp::csp::*;
 use crate::csp::types::*;
 
 impl CSP {
-    pub fn csp_ping(
+    pub fn ping(
         self,
         node: u16,
         timeout: u32,
         conn_options: u8,
-    ) -> Result<(), CspError> {
+    ) -> Result<(), Error> {
         let mut conn = csp_connect(
-            CspPriorities::CspPrioNormal,
+            Priorities::PrioNormal,
             node,
-            CspServices::CspPing as u8,
+            Services::Ping as u8,
             timeout,
             conn_options,
         )
         .unwrap();
 
-        let mut packet = CspPacket::new();
+        let mut packet = Packet::new();
 
         let mut idx = 0;
         for a in packet.data.iter_mut() {
@@ -28,7 +28,7 @@ impl CSP {
             idx += 1;
         }
 
-        self.csp_send(&mut conn, &mut packet).unwrap();
+        self.send(&mut conn, &mut packet).unwrap();
 
        // let _spacket = self.csp_read(&mut conn, timeout).unwrap();
 

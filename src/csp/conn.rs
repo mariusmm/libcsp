@@ -5,16 +5,16 @@ use crate::csp::types::*;
 use std::io;
 use std::sync::mpsc::sync_channel;
 
-pub struct CspConn {
-    arr_conn: Vec<CspConnStatus>,
+pub struct Conn {
+    arr_conn: Vec<ConnStatus>,
 }
 
 #[derive(Debug)]
-pub struct CspConnStatus {
-    pub conn_type: CspConnType,
-    pub state: CspConnState,
-    pub idin: CspId,
-    pub idout: CspId,
+pub struct ConnStatus {
+    pub conn_type: ConnType,
+    pub state: ConnState,
+    pub idin: Id,
+    pub idout: Id,
     pub sport_out: u8,
     pub timestamp: u32,
     pub opts: u32,
@@ -23,25 +23,19 @@ pub struct CspConnStatus {
 }
 
 #[derive(Debug)]
-pub enum CspConnType {
+pub enum ConnType {
     CspConnClient,
     CspConnServer,
 }
 
-#[derive(Debug)]
-pub enum CspConnState {
-    CspConnClose,
-    CspConnOpen,
-}
-
-impl CspConnStatus {
+impl ConnStatus {
     pub fn new() -> Self {
         let (s, r) = sync_channel(16);
         Self {
-            conn_type: CspConnType::CspConnClient,
-            state: CspConnState::CspConnClose,
-            idin: CspId::new(),
-            idout: CspId::new(),
+            conn_type: ConnType::CspConnClient,
+            state: ConnState::ConnClosed,
+            idin: Id::new(),
+            idout: Id::new(),
             sport_out: 0,
             timestamp: 0,
             opts: 0,
@@ -51,18 +45,18 @@ impl CspConnStatus {
     }
 }
 
-impl CspConn {
+impl Conn {
     pub fn new() -> Self {
         info!("CSP conn init");
 
-        let mut ret_val = CspConn {
+        let mut ret_val = Conn {
             arr_conn: Vec::new(),
         };
 
         // TODO: this 16 should be configurable
         for i in 0..16 {
-            let mut a = CspConnStatus::new();
-            a.state = CspConnState::CspConnClose;
+            let mut a = ConnStatus::new();
+            a.state = ConnState::ConnClosed;
             a.idin.flags = 0;
             a.sport_out = 16 + i;
             (a.channel_tx, a.channel_rx) = sync_channel(16);
@@ -72,8 +66,8 @@ impl CspConn {
         ret_val
     }
 
-    pub fn get(self, idin: CspId, idout: CspId, typ: CspConnType) -> CspConnStatus {
-        let cspconn = CspConnStatus::new();
+    pub fn get(self, idin: Id, idout: Id, typ: ConnType) -> ConnStatus {
+        let cspconn = ConnStatus::new();
 
         cspconn
     }
@@ -81,16 +75,16 @@ impl CspConn {
 }
 
 pub fn csp_connect(
-    prio: CspPriorities,
+    prio: Priorities,
     dest: u16,
     dport: u8,
     timeout: u32,
     opts: u8,
-) -> Result<CspConnection, io::Error> {
-    let a = CspConnection {
+) -> Result<Connection, io::Error> {
+    let a = Connection {
         opts: 0,
         state: ConnState::ConnClosed,
-        idout: CspId {
+        idout: Id {
             pri: 2,
             flags: 1,
             src: 5,
