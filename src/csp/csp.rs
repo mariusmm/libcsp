@@ -45,7 +45,7 @@ impl CSP {
     }
 
     pub fn csp_send(
-        self,
+        &self,
         conn: &mut CspConnection,
         packet: &mut CspPacket,
     ) -> Result<(), io::Error> {
@@ -61,7 +61,7 @@ impl CSP {
     }
 
     pub fn csp_send_direct(
-        self,
+        &self,
         _conn: &mut CspConnection,
         packet: &mut CspPacket,
     ) -> Result<(), io::Error> {
