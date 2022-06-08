@@ -31,7 +31,7 @@ impl CSP {
             outb_channel_in: std::sync::Arc::new(std::sync::Mutex::new(b)),
             outb_channel_out: a,
         };
-        ret.start_routing();
+        ret.routing_process();
 
         ret
     }
@@ -90,7 +90,7 @@ impl CSP {
         Ok(CspPacket::new())
     }
 
-    fn start_routing(&self) 
+    fn routing_process(&self)
     {
         info!("Start routing");
         let ch = self.outb_channel_in.clone(); 
