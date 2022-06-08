@@ -36,7 +36,7 @@ pub struct Id {
     pub sport: u8,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum ConnState {
     ConnOpen,
     ConnClosed,
