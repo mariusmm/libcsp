@@ -14,10 +14,9 @@ use crate::csp::types::*;
 /// Modules (csp_send) -> CSP Routing -> Intf's -> Outside)
 ///
 pub struct CSP {
-    //intf_list: std::sync::Arc<Vec<Box<dyn crate::csp::interface::NextHop>>>,
     intf_list: std::sync::Arc<std::sync::Mutex<Vec<Box<dyn crate::csp::interface::NextHop>>>>,
     inb_channel_out: Option<std::sync::mpsc::SyncSender<CspFIFO>>,
-    outb_channel_in: std::sync::mpsc::Receiver<CspFIFO>,
+    outb_channel_in: std::sync::Arc<std::sync::Mutex<std::sync::mpsc::Receiver<CspFIFO>>>,
     outb_channel_out: std::sync::mpsc::SyncSender<CspFIFO>,
 }
 
@@ -25,10 +24,11 @@ impl CSP {
     pub fn new() -> Self {
         // TODO: Any better style to keep tuple at init time?
         let (a, b) = sync_channel(16);
-        let mut ret = CSP {
+
+        let ret = CSP {
             intf_list: std::sync::Arc::new(std::sync::Mutex::new(Vec::new())),
             inb_channel_out: None,
-            outb_channel_in: b,
+            outb_channel_in: std::sync::Arc::new(std::sync::Mutex::new(b)),
             outb_channel_out: a,
         };
         ret.start_routing();
@@ -37,12 +37,7 @@ impl CSP {
     }
 
     pub fn add_interface(&mut self, intf: Box<dyn crate::csp::interface::NextHop>) {
-        //self.intf_list.push(intf);
-        self.intf_list.lock().and_then(|mut item| {
-
-            item.push(intf);
-            Ok(())
-        });
+        self.intf_list.lock().unwrap().push(intf);
     }
 
     pub fn get_rx_channel(&self) -> std::sync::mpsc::SyncSender<CspFIFO> {
@@ -73,42 +68,48 @@ impl CSP {
         let from_me = true;
         let via = 2u16;
 
-        self.intf_list.lock().and_then(|item| {
+        /*self.intf_list.lock().and_then(|item| {
             item[0].next_hop(via, packet, from_me);
             Ok(())
-        } ).unwrap();
+        } ).unwrap(); */
+
+        let a = self.intf_list.lock().unwrap();
+        a[0].next_hop(via, packet, from_me)
 
         //iface.next_hop(via, packet, from_me)
-        Ok(())
     }
 
-    pub fn csp_read(&self, timeout: Duration) -> Result<CspPacket, CspError> {
-        let pkt = self.outb_channel_in.recv_timeout(timeout);
+    /* TODO: Implement! */
+    pub fn csp_read(&self, _timeout: Duration) -> Result<CspPacket, CspError> {
+       /* let pkt = self.outb_channel_in.recv_timeout(timeout);
         match pkt {
             Ok(p) => Ok(p.packet),
             Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
         }
+        */
+        Ok(CspPacket::new())
     }
 
-    fn start_routing(&mut self) 
+    fn start_routing(&self) 
     {
         info!("Start routing");
-        // TODO: This 16 should be configurable
-        let (a, b) = sync_channel(16);
-        self.inb_channel_out = Some(a);
+        let ch = self.outb_channel_in.clone(); 
 
-        let ch = self.outb_channel_out.clone(); 
         std::thread::spawn( move|| {
-            let data = b.recv().unwrap();
-            println!("ROUTE RX: {:?}", data);
-            
+            let a = ch.lock().unwrap().recv();
+            // match a {
+            //     Ok(p) => debug!("Routing rcv: {:?} \n\t {:?}", p.packet, p.iface),
+            //     _ => {debug!("Error! {:?}", a); println!("Error aqui")},
+            // }
+            let data = a.unwrap();
+            debug!("ROUTE RX: {:?}\n\t{:?}", data.iface, data.packet);
+
             //let ch = self.outb_channel_out.clone();
-            ch.send(data);
+            //ch.send(data);
 
             //let ifaces = self.intf_list.lock().and_then(|mut item| {
             //    Ok(item)
             //} ).unwrap();
-            
         });
     }
 }

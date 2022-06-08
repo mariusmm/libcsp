@@ -220,7 +220,7 @@ fn kiss_process_rx(
 
                     let len = packet.data.len();
 
-                    if len < 5 {
+                    if len < 9 {
                         warn!("Invalid pkt length");
                         return Err(std::io::Error::new(std::io::ErrorKind::Other, "Invalid length"));
                     }
@@ -362,6 +362,7 @@ mod tests {
         let mut kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/1".to_string());
 
         let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut kiss_intf, 0, false);
+
         assert!(result.is_ok());
     }
 
@@ -394,11 +395,12 @@ mod tests {
 
         let kiss_intf = KissIntfData::new( intf,
             uart_config,
-            "/dev/pts/8".to_string(),
+            "/dev/pts/9".to_string(),
         );
 
         csp.add_interface(Box::new(kiss_intf));
 
+        std::thread::sleep(std::time::Duration::new(5, 0));
         let pkt = csp.csp_read(Duration::from_millis(10000)).unwrap();
         let data = pkt.data;
         println!("RX packet: {:02X?}", data);
