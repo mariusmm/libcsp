@@ -3,8 +3,10 @@
 use std::io;
 use std::sync::mpsc::sync_channel;
 use std::time::Duration;
+use std::collections::HashSet;
 
 use crate::csp::types::*;
+use crate::csp::conn::*;
 
 ///
 /// ## CSP
@@ -18,10 +20,14 @@ pub struct CSP {
     inb_channel_out: Option<std::sync::mpsc::SyncSender<CspFIFO>>,
     outb_channel_in: std::sync::Arc<std::sync::Mutex<std::sync::mpsc::Receiver<CspFIFO>>>,
     outb_channel_out: std::sync::mpsc::SyncSender<CspFIFO>,
+    address: u8,
+    sport: u8,
+    arr_conn: HashSet<std::rc::Rc<Connection>>,
+
 }
 
 impl CSP {
-    pub fn new() -> Self {
+    pub fn new(address: u8) -> Self {
         // TODO: Any better style to keep tuple at init time?
         let (a, b) = sync_channel(16);
 
@@ -30,6 +36,9 @@ impl CSP {
             inb_channel_out: None,
             outb_channel_in: std::sync::Arc::new(std::sync::Mutex::new(b)),
             outb_channel_out: a,
+            address: address,
+            sport: 0,
+            arr_conn: HashSet::new(),
         };
         ret.routing_process();
 
@@ -46,7 +55,7 @@ impl CSP {
 
     pub fn send(
         &self,
-        conn: &mut Connection,
+        conn: &Connection,
         packet: &mut Packet,
     ) -> Result<(), io::Error> {
         if conn.state != ConnState::ConnOpen {
@@ -62,7 +71,7 @@ impl CSP {
 
     pub fn send_direct(
         &self,
-        _conn: &mut Connection,
+        _conn: &Connection,
         packet: &mut Packet,
     ) -> Result<(), io::Error> {
         let from_me = true;
@@ -96,12 +105,13 @@ impl CSP {
         let ch = self.outb_channel_in.clone(); 
 
         std::thread::spawn( move|| {
-            let a = ch.lock().unwrap().recv();
+            let data = ch.lock().unwrap().recv().unwrap();
             // match a {
             //     Ok(p) => debug!("Routing rcv: {:?} \n\t {:?}", p.packet, p.iface),
             //     _ => {debug!("Error! {:?}", a); println!("Error aqui")},
             // }
-            let data = a.unwrap();
+            
+            //let data = fifo.unwrap();
             debug!("ROUTE RX: {:?}\n\t{:?}", data.iface, data.packet);
 
             //let ch = self.outb_channel_out.clone();
@@ -113,10 +123,47 @@ impl CSP {
         });
     }
 
-    pub fn connect() {
+    pub fn connect(
+        &mut self,
+        prio: Priorities,
+        dest: u8,
+        dport: u8,
+        timeout: u32,
+        opts: u8,
+        conn_type: ConnType,
+    ) -> Result<std::rc::Rc<Connection>, io::Error> {
+       
+        let mut incoming_id = Id::new().pri(prio).dst(self.address).src(dest).sport(dport).flags(0);
+        let mut outgoing_id = Id::new().pri(prio).dst(dest).src(self.address).dport(dport).sport(0).flags(0);
 
+        // Find new sport
+        self.sport = self.sport+1;
+        outgoing_id.sport = self.sport;
+        incoming_id.dport = self.sport;
+        
+        let mut conn = Connection::new();
+        
+        conn.idout = outgoing_id;
+        conn.idin = incoming_id;
+        conn.opts = opts;
+        conn.timeout = timeout;
+
+
+        conn.conn_type = conn_type;
+        conn.state = ConnState::ConnOpen;
+
+        let a = std::rc::Rc::new(conn);
+        
+        let b = a.clone();
+
+        if !self.arr_conn.contains(&*a) {
+            println!("Inserting new connection");
+            //let a = std::rc::Rc::new(conn.clone());
+            self.arr_conn.insert(a);
+        }
+
+        Ok(b)
     }
-
 }
 
 #[cfg(test)]
@@ -125,6 +172,21 @@ mod tests {
     use crate::csp::interface::*;
     use crate::csp::interfaces::if_kiss::*;
     use serialport::{DataBits, StopBits};
+
+    #[test]
+    fn connect() {
+        let mut csp = CSP::new(42);
+
+        let connection = csp.connect(Priorities::PrioNormal, 23, 5, 5000, 0, ConnType::ConnClient).unwrap();
+        println!("Connecting: {:#?}", connection);
+
+        let connection2 = csp.connect(Priorities::PrioNormal, 23, 5, 5000, 0, ConnType::ConnClient).unwrap();
+        println!("Connecting: {:#?}", connection);
+        println!("Connecting2: {:#?}", connection2);
+
+
+
+    }
 
     #[test]
     #[ignore]
@@ -137,7 +199,7 @@ mod tests {
         }
 
         let test_csp_id = Id {
-            pri: 2,
+            pri: Priorities::PrioNormal,
             flags: 0,
             src: 1,
             dst: 8,
@@ -156,7 +218,7 @@ mod tests {
         let mut test_conn = Connection::new();
         test_conn.state = ConnState::ConnOpen;
 
-        let mut csp = CSP::new();
+        let mut csp = CSP::new(5);
         intf.rx_channel = Some(csp.get_rx_channel());
 
         let kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/4".to_string());

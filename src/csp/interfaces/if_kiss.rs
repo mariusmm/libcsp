@@ -80,7 +80,7 @@ impl KissIntfData {
         let cspid_low = (packet.id.sport & 0x3F) | (packet.id.dport & 0x3) << 6;
         let cspid_med = ((packet.id.dport & 0x3C) >> 2) | (packet.id.dst & 0x1F) << 4;
         let cspid_high =
-            (packet.id.pri << 6) | (packet.id.src & 0x3F) << 1 | (packet.id.dst & 0x10) >> 4;
+            ((packet.id.pri as u8) << 6) | (packet.id.src & 0x3F) << 1 | (packet.id.dst & 0x10) >> 4;
 
         packet.data.insert(1, cspid_high);
         packet.data.insert(2, cspid_med);
@@ -293,7 +293,7 @@ fn get_packet_id (byte0: u8, byte1: u8, byte2: u8, byte3: u8) -> Id {
     ret_val.dport = byte1 & 0x0F | (byte2 & 0xC0) >> 6;
     ret_val.dst = (byte1 >> 4) | ( byte0 & 0x01 ) << 4;
     ret_val.src = (byte0 >> 1) & 0x1F;
-    ret_val.pri = (byte0 >> 6) & 0x03;
+    ret_val.pri = ((byte0 >> 6) & 0x03).into();
     ret_val.flags = byte3;
 
     ret_val
@@ -335,7 +335,7 @@ mod tests {
             }
         }
         let my_csp_id = Id {
-            pri: 2,
+            pri: Priorities::PrioNormal,
             flags: 1,
             src: 5,
             dst: 12,
@@ -355,11 +355,11 @@ mod tests {
             stopbits: StopBits::One,
         };
 
-        let csp = CSP::new();
+        let csp = CSP::new(5);
 
         intf.rx_channel = Some(csp.get_rx_channel());
 
-        let mut kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/1".to_string());
+        let mut kiss_intf = KissIntfData::new(intf, uart_config, "/dev/pts/5".to_string());
 
         let result = csp_send_direct_iface(&my_csp_id, &mut pkt, &mut kiss_intf, 0, false);
 
@@ -390,12 +390,12 @@ mod tests {
 
         let mut intf =  Iface::new(5, 5, "KISS".to_string());
 
-        let mut csp = CSP::new();
+        let mut csp = CSP::new(5);
         intf.rx_channel = Some(csp.get_rx_channel());
 
         let kiss_intf = KissIntfData::new( intf,
             uart_config,
-            "/dev/pts/9".to_string(),
+            "/dev/pts/5".to_string(),
         );
 
         csp.add_interface(Box::new(kiss_intf));
@@ -422,7 +422,7 @@ mod tests {
         let a = get_packet_id(0x82, 0x20, 0x5b, 0x00);
         println!("{:?}", a);
         let cmp = Id {
-            pri: 2,
+            pri: Priorities::PrioNormal,
             src: 1,
             dst: 2,
             sport: 27,

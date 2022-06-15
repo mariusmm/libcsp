@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MIT
 
-use crate::csp::conn::*;
 use crate::csp::csp::*;
 use crate::csp::types::*;
+use crate::csp::conn::*;
 
 impl CSP {
     pub fn ping(
-        self,
-        node: u16,
+        mut self,
+        node: u8,
         timeout: u32,
         conn_options: u8,
     ) -> Result<(), Error> {
-        let mut conn = csp_connect(
+
+        let mut conn = self.connect(
             Priorities::PrioNormal,
             node,
             Services::Ping as u8,
             timeout,
             conn_options,
+            ConnType::ConnClient,
         )
         .unwrap();
 
@@ -28,7 +30,7 @@ impl CSP {
             idx += 1;
         }
 
-        self.send(&mut conn, &mut packet).unwrap();
+       self.send(&mut conn, &mut packet).unwrap();
 
        // let _spacket = self.csp_read(&mut conn, timeout).unwrap();
 

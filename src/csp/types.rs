@@ -4,6 +4,7 @@ use std::io;
 use crc::{Crc, CRC_32_ISCSI};
 
 use crate::csp::interface::*;
+use crate::csp::conn::*;
 
 pub const CSPCRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISCSI);
 
@@ -26,9 +27,9 @@ pub struct Packet {
     pub data: Vec<u8>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Hash)]
 pub struct Id {
-    pub pri: u8,
+    pub pri: Priorities,
     pub flags: u8,
     pub src: u8,
     pub dst: u8,
@@ -36,16 +37,20 @@ pub struct Id {
     pub sport: u8,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Hash, Clone)]
 pub enum ConnState {
     ConnOpen,
     ConnClosed,
 }
 
+#[derive(Hash, Debug, Clone)]
 pub struct Connection {
-    pub opts: u32,
+    pub conn_type: ConnType,
+    pub opts: u8,
     pub state: ConnState,
     pub idout: Id,
+    pub idin: Id,
+    pub timeout: u32,
 }
 
 #[derive(Debug)]
@@ -72,12 +77,27 @@ pub enum Services {
     Uptime = 6,
 }
 
+#[repr(u8)]
+#[derive(Debug, Copy, Clone, PartialEq, Hash)]
 pub enum Priorities {
-    PrioCritical,
-    PrioHigh,
-    PrioNormal,
-    PrioLow,
+    PrioCritical = 0,
+    PrioHigh = 1,
+    PrioNormal = 2,
+    PrioLow = 3,
 }
+
+impl From<u8> for Priorities {
+    fn from(orig: u8) -> Self {
+        match orig {
+            0 => return Priorities::PrioCritical,
+            1 => return Priorities::PrioHigh,
+            2 => return Priorities::PrioNormal,
+            _ => return Priorities::PrioLow,
+        };
+    }
+}
+
+
 
 impl Packet {
     pub fn new() -> Self {
@@ -114,7 +134,7 @@ pub fn csp_crc32_calc(data: &Vec<u8>) -> u32 {
 impl Id {
     pub fn new() -> Self {
         Self {
-            pri: 0,
+            pri: Priorities::PrioLow,
             flags: 0,
             src: 0,
             dst: 0,
@@ -123,7 +143,7 @@ impl Id {
         }
     }
 
-    pub fn pri(mut self, pri: u8) -> Self {
+    pub fn pri(mut self, pri: Priorities) -> Self {
         self.pri = pri;
         self
     }
@@ -157,12 +177,26 @@ impl Id {
 impl Connection {
     pub fn new() -> Self {
         Self {
+            conn_type: ConnType::ConnClient,
             idout: Id::new(),
+            idin: Id::new(),
             opts: 0,
             state: ConnState::ConnClosed,
+            timeout: 0,
         }
     }
 }
+
+// Based on csp_conn_find from libcsp.c
+impl PartialEq for Connection {
+    fn eq(&self, other: &Connection) -> bool {
+        self.state == ConnState::ConnOpen 
+        && self.conn_type == ConnType::ConnClient 
+        && self.idin.dport == other.idin.dport
+    }
+}
+
+impl Eq for Connection {}
 
 #[cfg(test)]
 mod tests {
@@ -178,12 +212,12 @@ mod tests {
     fn cspid_test() {
         let test = Id::new()
             .flags(5)
-            .pri(2)
+            .pri(Priorities::PrioNormal)
             .dport(23)
             .sport(37)
             .src(125)
             .dst(90);
-        assert_eq!(test.pri, 2);
+        assert_eq!(test.pri, Priorities::PrioNormal);
         assert_eq!(test.flags, 5);
         assert_eq!(test.src, 125);
         assert_eq!(test.dst, 90);

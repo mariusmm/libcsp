@@ -2,7 +2,6 @@
 
 use crate::csp::types::*;
 
-use std::io;
 use std::sync::mpsc::sync_channel;
 
 pub struct Conn {
@@ -22,17 +21,17 @@ pub struct ConnStatus {
     pub channel_tx: std::sync::mpsc::SyncSender<CspFIFO>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Hash, Clone)]
 pub enum ConnType {
-    CspConnClient,
-    CspConnServer,
+    ConnClient,
+    ConnServer,
 }
 
 impl ConnStatus {
     pub fn new() -> Self {
         let (s, r) = sync_channel(16);
         Self {
-            conn_type: ConnType::CspConnClient,
+            conn_type: ConnType::ConnClient,
             state: ConnState::ConnClosed,
             idin: Id::new(),
             idout: Id::new(),
@@ -74,25 +73,3 @@ impl Conn {
 
 }
 
-pub fn csp_connect(
-    prio: Priorities,
-    dest: u16,
-    dport: u8,
-    timeout: u32,
-    opts: u8,
-) -> Result<Connection, io::Error> {
-    let a = Connection {
-        opts: 0,
-        state: ConnState::ConnClosed,
-        idout: Id {
-            pri: 2,
-            flags: 1,
-            src: 5,
-            dst: 12,
-            dport: 23,
-            sport: 99,
-        },
-    };
-
-    Ok(a)
-}
