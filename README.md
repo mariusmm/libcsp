@@ -16,8 +16,8 @@ The source code is available under MIT license, see LICENSE for license text
 
 Currently on very preliminar development phase.
 
-[X] Basic packet creation (CRC)
-[x] Direct Tx/Rx (UART only)
-[ ] Packet filtering
-[ ] Routing
-[ ] ...
++ [X] Basic packet creation (CRC)
++ [x] Direct Tx/Rx (UART only)
++ [ ] Packet filtering
++ [ ] Routing
++ [ ] ...
