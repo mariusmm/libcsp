@@ -22,10 +22,8 @@ impl CSP {
 
         let mut packet = CspPacket::new();
 
-        let mut idx = 0;
-        for a in packet.data.iter_mut() {
-            *a = idx;
-            idx += 1;
+        for (idx, a) in packet.data.iter_mut().enumerate() {
+            *a = idx as u8;
         }
 
         self.csp_send(&mut conn, &mut packet).unwrap();
