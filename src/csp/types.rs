@@ -17,7 +17,7 @@ pub fn csp_send_direct_iface<Intf>(
 where
     Intf: NextHop,
 {
-    return iface.next_hop(via, packet, from_me);
+    iface.next_hop(via, packet, from_me)
 }
 
 #[derive(Clone)]
@@ -97,7 +97,7 @@ impl CspPacket {
     }
 
     pub fn csp_crc32_append(&mut self) {
-        let calc_crc = CSPCRC32.checksum(&mut self.data);
+        let calc_crc = CSPCRC32.checksum(&self.data);
 
         self.data.push(((calc_crc & 0xFF000000) >> 24) as u8);
         self.data.push(((calc_crc & 0x00FF0000) >> 16) as u8);
@@ -106,8 +106,14 @@ impl CspPacket {
     }
 }
 
-pub fn csp_crc32_calc(data: &Vec<u8>) -> u32 {
-    CSPCRC32.checksum(&data)
+impl Default for CspPacket {
+         fn default() -> Self {
+             Self::new()
+         }
+}
+
+pub fn csp_crc32_calc(data: &[u8]) -> u32 {
+    CSPCRC32.checksum(data)
 }
 
 impl CspId {
@@ -153,6 +159,13 @@ impl CspId {
     }
 }
 
+impl Default for CspId {
+    fn default() -> Self {
+       Self::new()
+     }
+}
+
+
 impl CspConnection {
     pub fn new() -> Self {
         Self {
@@ -162,6 +175,13 @@ impl CspConnection {
         }
     }
 }
+
+impl Default for CspConnection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
