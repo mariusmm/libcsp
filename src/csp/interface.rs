@@ -24,7 +24,7 @@ pub struct CspIface {
     pub txbytes: u32,
     pub rxbytes: u32,
     pub irq: u32,
-    pub rx_channel: Option<std::sync::mpsc::SyncSender<CspFIFO>>
+    pub rx_channel: Option<std::sync::mpsc::SyncSender<CspFIFO>>,
 }
 
 pub trait NextHop {
@@ -32,7 +32,7 @@ pub trait NextHop {
 }
 
 impl CspIface {
-    pub fn new(addr: u16, netmask: u16, name : String) -> CspIface {
+    pub fn new(addr: u16, netmask: u16, name: String) -> CspIface {
         Self {
             addr,
             netmask,

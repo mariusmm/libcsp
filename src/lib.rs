@@ -3,7 +3,8 @@
 pub mod csp;
 pub use csp::*;
 extern crate pretty_env_logger;
-#[macro_use] extern crate log;
+#[macro_use]
+extern crate log;
 
 //use std::sync::mpsc;
 //use std::sync::mpsc::{Sender, Receiver};
@@ -22,11 +23,9 @@ pub fn csp_init() {
 
     //csp_rdp_queue_init();
 
-
     //let (tx, rx) : (Sender<CspPacket>, Receiver<CspPacket>) = mpsc::channel();
     info!("CSP library init... Done");
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -36,7 +35,4 @@ mod tests {
     fn it_works() {
         csp_init();
     }
-
-    
-
 }

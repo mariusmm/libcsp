@@ -4,7 +4,6 @@ use std::io;
 use std::sync::mpsc::sync_channel;
 use std::time::Duration;
 
-
 use crate::csp::types::*;
 
 pub struct CSP {
@@ -61,16 +60,11 @@ impl CSP {
         iface.next_hop(via, packet, from_me)
     }
 
-    pub fn csp_read(
-        self,
-        timeout: Duration,
-    ) -> Result<CspPacket, CspError> {
-        let pkt = self.channel_rx.recv_timeout (timeout);
+    pub fn csp_read(self, timeout: Duration) -> Result<CspPacket, CspError> {
+        let pkt = self.channel_rx.recv_timeout(timeout);
         match pkt {
-            Ok(p) => {
-                Ok(p.packet)
-            }
-            Err(_) => Err(crate::csp::types::CspError::CspNoPacket)
+            Ok(p) => Ok(p.packet),
+            Err(_) => Err(crate::csp::types::CspError::CspNoPacket),
         }
     }
 }
@@ -124,8 +118,8 @@ mod tests {
         csp.add_interface(Box::new(kiss_intf));
 
         let mut test_pkt = CspPacket::new()
-        .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        .id(test_csp_id);
+            .data(vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            .id(test_csp_id);
 
         let res = csp.csp_send(&mut test_conn, &mut test_pkt);
         assert!(res.is_ok());

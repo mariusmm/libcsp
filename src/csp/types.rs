@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use std::io;
 use crc::{Crc, CRC_32_ISCSI};
+use std::io;
 
 use crate::csp::interface::*;
 
@@ -107,9 +107,9 @@ impl CspPacket {
 }
 
 impl Default for CspPacket {
-         fn default() -> Self {
-             Self::new()
-         }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 pub fn csp_crc32_calc(data: &[u8]) -> u32 {
@@ -161,10 +161,9 @@ impl CspId {
 
 impl Default for CspId {
     fn default() -> Self {
-       Self::new()
-     }
+        Self::new()
+    }
 }
-
 
 impl CspConnection {
     pub fn new() -> Self {
@@ -181,7 +180,6 @@ impl Default for CspConnection {
         Self::new()
     }
 }
-
 
 #[cfg(test)]
 mod tests {
