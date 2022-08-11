@@ -70,11 +70,16 @@ impl CSP {
             Ok(p) => {
                 Ok(p.packet)
             }
-            Err(_) => return Err(crate::csp::types::CspError::CspNoPacket),
+            Err(_) => Err(crate::csp::types::CspError::CspNoPacket)
         }
     }
 }
 
+impl Default for CSP {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
