@@ -97,7 +97,7 @@ impl KissIntfData {
             None => {error!("Port not initialized for KISS interface"); panic!("Port not initialized for KISS interface");},
             Some(p) => {
                 let mut cl = p.try_clone()?;
-                cl.write(mem_buff.split_at(kiss_len).0)?;
+                cl.write_all(mem_buff.split_at(kiss_len).0)?;
             }
         };
         Ok(())
@@ -120,29 +120,28 @@ pub fn usart_rx_func(port: Box<dyn SerialPort>, intf: &CspIface, ) {
 }
 
 pub fn kiss_process_tx(data: &[u8], len: usize) -> Vec<u8> {
-    let mut res = Vec::new();
 
     // start
-    res.push(FEND);
-    res.push(TNC_DATA);
+    let mut res = vec![FEND, TNC_DATA];
 
-    for n in 1..len {
-        if data[n] == FEND {
+    for item in data.iter().take(len).skip(1) {
+        if *item == FEND {
             res.push(FESC);
             res.push(TFEND);
             continue;
         }
-        if data[n] == FESC {
+        if *item == FESC {
             res.push(FESC);
             res.push(TFESC);
             continue;
         }
-        res.push(data[n]);
+        res.push(*item);
     }
+
     // stop
     res.push(FEND);
 
-    return res;
+    res
 }
 
 impl KissIntfDataRx {
@@ -165,23 +164,24 @@ impl KissIntfDataRx {
         match r {
             Ok(t) => {
                 let packet = kiss_process_rx(serial_buf, t, self);
-                if packet.is_ok() {
+                //if packet.is_ok() {
+                    if let Ok(p) = packet {
                     let fifo_pkt = CspFIFO {
                         iface: intf.clone(),
-                        packet: packet.unwrap().clone(),
+                        packet: p,
                     };
 
                     if intf.rx_channel.is_some() {
-                        let _res = intf.rx_channel.clone().unwrap().send(fifo_pkt);
+                        let _res = intf.rx_channel.unwrap().send(fifo_pkt);
                     } else {
                         error!("No RX fifo");
                     }
                 }
 
-                return Ok(());
+                Ok(())
             }
-            Err(e) => return Err(e),
-        };
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -240,7 +240,7 @@ fn kiss_process_rx(
                     let len = packet.data.len();
 
                     let calc_crc_buf = &packet.data[0..len-4].to_vec();
-                    let calc_crc = csp_crc32_calc(&calc_crc_buf);
+                    let calc_crc = csp_crc32_calc(calc_crc_buf);
 
                     let pkt_crc_buf = &packet.data[len-4 ..];
                     let pkt_crc = byteorder::BigEndian::read_u32(pkt_crc_buf);
@@ -394,7 +394,7 @@ mod tests {
 
         let kiss_intf = KissIntfData::new( intf,
             uart_config,
-            "/dev/pts/4".to_string(),
+            "/dev/pts/5".to_string(),
         );
 
         csp.add_interface(Box::new(kiss_intf));

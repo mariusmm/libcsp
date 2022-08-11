@@ -34,9 +34,9 @@ pub trait NextHop {
 impl CspIface {
     pub fn new(addr: u16, netmask: u16, name : String) -> CspIface {
         Self {
-            addr: addr,
-            netmask: netmask,
-            name: name,
+            addr,
+            netmask,
+            name,
             mtu: 255,
             split_horizon_off: 0,
             tx: 0,
